@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include "data_structures.h"
 #include "parse.h"
+#include "LagrangianRelaxation.h"
+
+void testLR();
 
 //你要完成的功能总入口
 void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
@@ -11,7 +14,53 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
 	// 需要输出的内容
 	char * topo_file = (char *)"17\n\n0 8 0 20\n21 8 0 20\n9 11 1 13\n21 22 2 20\n23 22 2 8\n1 3 3 11\n24 3 3 17\n27 3 3 26\n24 3 3 10\n18 17 4 11\n1 19 5 26\n1 16 6 15\n15 13 7 13\n4 5 8 18\n2 25 9 15\n0 7 10 10\n23 24 11 23";
 
+    testLR();
+
+
 	// 直接调用输出文件的方法输出到指定文件中(ps请注意格式的正确性，如果有解，第一行只有一个数据；第二行为空；第三行开始才是具体的数据，数据之间用一个空格分隔开)
 	write_result(topo_file, filename);
 
+}
+
+void testLR(){
+	Graph G;
+	G.VertexNum = 4;
+	G.EdgeNum = 6;
+	G.add_Edge(0,1,2,2,5);
+	G.add_Edge(1,2,4,1,2);
+	G.add_Edge(2,1,3,2,1);
+	G.add_Edge(3,3,4,5,0);
+	G.add_Edge(4,2,3,3,4);
+	G.add_Edge(5,3,2,2,3);
+
+    Vertex v1(1);
+	v1.EdgesOut.insert(0);
+	v1.EdgesOut.insert(2);
+	v1.d = 3;
+	G.V[1] = v1;
+
+	Vertex v2(2);
+	v2.EdgesOut.insert(1);
+	v2.EdgesOut.insert(4);
+	v2.EdgesIn.insert(0);
+	v2.EdgesIn.insert(5);
+	v2.d = 2;
+	G.V[2] = v2;
+
+	Vertex v3(3);
+	v3.EdgesOut.insert(3);
+	v3.EdgesOut.insert(5);
+	v3.EdgesIn.insert(2);
+	v3.EdgesIn.insert(4);
+	v3.d = -1;
+	G.V[3] = v3;
+
+	Vertex v4(4);
+	v4.EdgesIn.insert(1);
+	v4.EdgesIn.insert(3);
+	v4.d = -4;
+	G.V[4] = v4;
+
+	LR optmizer(G);
+	optmizer.optimize();
 }

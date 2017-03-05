@@ -13,11 +13,14 @@ class Graph;
 class Vertex
 {
 public:
+    
     int id;
+	int pi;//
+	int d;//current resource
 	unordered_set<int> EdgesOut;
 	unordered_set<int> EdgesIn;
 
-    Vertex(int id):id(id){}
+    Vertex(int id):id(id),pi(0),d(0){}
 	Vertex(){}
 };
 
@@ -42,15 +45,16 @@ public:
     int from;
 	int to;
 	int bandwidth;
-	int current_bandwidth;
 	int cost;
+	int x;//流量
 
     Edge(int id,
         int from,
 	    int to,
 	    int bandwidth,
 	    int cost):
-		id(id),from(from),to(to),bandwidth(bandwidth),cost(cost)
+		id(id),from(from),to(to),bandwidth(bandwidth),cost(cost),
+		x(0)
 		{}
 	Edge(){}
 };
@@ -84,7 +88,7 @@ public:
 		}
 
 		for(auto& cp:C){
-			GetVertex(cp.second.fromVertex);
+			GetVertex(cp.second.fromVertex).d = - cp.second.requirement;
 		}
 	}
 
