@@ -18,11 +18,11 @@ int GetNextInt(stringstream& ss){
 void parse_first_line(Graph& G,char* line){
 	stringstream ss(line);
 	G.VertexNum = GetNextInt(ss);
-	G.V.reserve(G.VertexNum);
+	//G.V.reserve(G.VertexNum);
 	G.EdgeNum = GetNextInt(ss) * 2;//bidirection!
-	G.E.reserve(G.EdgeNum);
+	//G.E.reserve(G.EdgeNum);
 	G.ConsumerNum = GetNextInt(ss);
-	G.C.reserve(G.ConsumerNum);
+	//G.C.reserve(G.ConsumerNum);
 }
 
 Graph parse(char* graph[MAX_EDGE_NUM], int line_num){

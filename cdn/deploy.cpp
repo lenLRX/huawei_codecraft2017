@@ -63,4 +63,13 @@ void testLR(){
 
 	LR optmizer(G);
 	optmizer.optimize();
+	cout << "test optimize done" << endl;
+
+	for(int i = 1;i < 5;i++){
+		cout << "G.V[" << i << "]= " << optmizer.G.V[i].d << endl;
+	}
+
+	for(auto& e:optmizer.G.E){
+		cout << e.second.from << " => " << e.second.to << " x: " << e.second.x << endl;
+	}
 }

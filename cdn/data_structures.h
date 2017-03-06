@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <map>
 
 #include <iostream>
 
@@ -102,9 +103,9 @@ public:
 		cout << V.size() << " " << E.size() / 2 << " " << C.size() << endl;
 	}
 
-    unordered_map<int,Edge> E;
-	unordered_map<int,Vertex> V;
-	unordered_map<int,Consumer> C;
+    map<int,Edge> E;
+	map<int,Vertex> V;
+	map<int,Consumer> C;
 	int EdgeNum;
 	int VertexNum;
 	int ConsumerNum;

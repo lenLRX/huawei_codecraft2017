@@ -3,6 +3,8 @@
 #include <list>
 #include <vector>
 #include <algorithm>
+#include <map>
+#include <set>
 
 void LagrangianRelaxation::optimize(){
 	unordered_set<Vertex*> excess_set;
@@ -10,7 +12,7 @@ void LagrangianRelaxation::optimize(){
 	unordered_set<Vertex*> S;
 	unordered_set<Edge*> R_ij;
 	vector<int> minvec;
-	list<Edge*> pred;
+	vector<Edge*> pred;
 	int a;
 	int e_S;
 	int r_pi_S;
@@ -20,6 +22,7 @@ void LagrangianRelaxation::optimize(){
 	int e_j;
 	do{
 		step1:
+		    pred.clear();
 		    excess_set.clear();
 			deficit_set.clear();
 			S.clear();
@@ -45,8 +48,10 @@ void LagrangianRelaxation::optimize(){
 			{
 				for(auto r:R_ij){
 					if(C_ij_pi(r->from,r->to,r) == 0){
-						if(G.V.at(r->to).d < 0)
-						    goto step4;
+						if(G.V.at(r->to).d < 0){
+							pred.push_back(r);
+							goto step4;
+						}
 						else{
 							pred.push_back(r);
 							S.insert(&G.V.at(r->to));
@@ -55,13 +60,14 @@ void LagrangianRelaxation::optimize(){
 					}
 			    }
 			}
+			cout << "error" << endl;
 		step3:
 		    minvec.clear();
 		    R_ij = get_rij(S);
 			for(auto r:R_ij){
 				if(C_ij_pi(r->from,r->to,r) == 0){
 					//首先沿(S,S')中所有满足Cij_pi=0的弧(i,j)增广流量使之饱和
-					G.V.at(r->from).d += (r->bandwidth - r->x);
+					G.V.at(r->from).d -= (r->bandwidth - r->x);
 					G.V.at(r->to).d += (r->bandwidth - r->x);
 					r->x = r->bandwidth;
 				}
@@ -79,22 +85,27 @@ void LagrangianRelaxation::optimize(){
 		step4:
 		    minvec.clear();
 		    //STEP4:根据pred中记录的节点，确定子树中从s到j的一条增广路P。
-		    e_s = G.V.at(pred.front()->from).d;
-			e_j = G.V.at(pred.back()->to).d;
-			minvec.push_back(e_s);
-			minvec.push_back(e_j);
-			for(auto r:pred){
-				minvec.push_back(r->bandwidth - r->x);
-			}
+			if(pred.size() > 0){
+				e_s = G.V.at(pred.front()->from).d;
+				e_j = G.V.at(pred.back()->to).d;
+				minvec.push_back(e_s);
+				minvec.push_back(-e_j);
+				for(auto r:pred){
+					minvec.push_back(r->bandwidth - r->x);
+				}
 
-			a = *min_element(minvec.begin(),minvec.end());
-			//沿P增广流量delta=min{e(s),-e(j),min{rij|(i,j)属于P}}。转STEP1
-			G.V.at(pred.front()->from).d+=a;
-			for(auto r:pred){
-				r->x += a;
-				G.V.at(r->to).d += a;
+				a = *min_element(minvec.begin(),minvec.end());
+				//沿P增广流量delta=min{e(s),-e(j),min{rij|(i,j)属于P}}。转STEP1
+				//源减少d，终点增加d
+				G.V.at(pred.front()->from).d -= a;
+				G.V.at(pred.back()->to).d += a;
+				for(auto r:pred){
+					r->x += a;
+				}
 			}
-			pred.clear();
+			else{
+				cout << "empty" << endl;
+			}
 			goto step1;
 	}while(0);
 }
