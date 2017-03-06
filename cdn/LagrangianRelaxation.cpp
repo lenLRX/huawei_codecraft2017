@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <limits>
 
 void LagrangianRelaxation::optimize(){
 	unordered_set<Vertex*> excess_set;
@@ -22,6 +23,7 @@ void LagrangianRelaxation::optimize(){
 	int e_j;
 	do{
 		step1:
+		    //cout << "source " << G.V[-1].d << endl;
 		    pred.clear();
 		    excess_set.clear();
 			deficit_set.clear();
@@ -66,17 +68,24 @@ void LagrangianRelaxation::optimize(){
 		    R_ij = get_rij(S);
 			for(auto r:R_ij){
 				if(C_ij_pi(r->from,r->to,r) == 0){
-					//首先沿(S,S')中所有满足Cij_pi=0的弧(i,j)增广流量使之饱和
-					G.V.at(r->from).d -= (r->bandwidth - r->x);
-					G.V.at(r->to).d += (r->bandwidth - r->x);
-					r->x = r->bandwidth;
+					if(r->from == -1){
+						G.V.at(r->from).d -= 1;
+						G.V.at(r->to).d += 1;
+						r->x += 1;
+					}
+					else{
+						//首先沿(S,S')中所有满足Cij_pi=0的弧(i,j)增广流量使之饱和
+						G.V.at(r->from).d -= (r->bandwidth - r->x);
+						G.V.at(r->to).d += (r->bandwidth - r->x);
+						r->x = r->bandwidth;
+					}
 				}
 				if(r->bandwidth - r->x > 0){
 					minvec.push_back(C_ij_pi(r->from,r->to,r));
 				}
 			}
 			//然后将S中的每个节点上的势增加a=min{Cij_pi|(i,j)属于(S,S'),rij > 0}转STEP1
-
+			//cout << "len(minvec) " << minvec.size() << endl;
 			a = *min_element(minvec.begin(),minvec.end());
 			for(auto s:S){
 				s->pi += a;
@@ -150,6 +159,35 @@ int LagrangianRelaxation::r_pi(unordered_set<Edge*>& R_ij){
 int LagrangianRelaxation::C_ij_pi(int i,int j,Edge* edge){
 	int pi_i = G.V.at(i).pi;
 	int pi_j = G.V.at(j).pi;
-	int c_ij = edge->bandwidth;
+	int c_ij = edge->cost;
 	return c_ij - pi_i + pi_j;
+}
+
+void LagrangianRelaxation::create_pesudo_source(){
+	int pesudo_source_id = -1;
+	Vertex pesudo_source(pesudo_source_id);
+
+	int sum = 0;
+
+	for(auto& pv:G.V){
+		Edge e;
+		e.id = G.GetAnID();
+		e.from = pesudo_source_id;
+		e.to = pv.second.id;
+		e.bandwidth = numeric_limits<int>::max();
+		e.cost = 0;
+		e.x = 0;
+
+		G.E[e.id] = e;
+		pv.second.EdgesIn.insert(e.id);
+		pesudo_source.EdgesOut.insert(e.id);
+
+		sum += pv.second.d;
+	}
+
+	pesudo_source.d = -sum;
+
+	cout << "pesudo_source.d " << pesudo_source.d << endl;
+
+	G.V[pesudo_source_id] = pesudo_source;
 }

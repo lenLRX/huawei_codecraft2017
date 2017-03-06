@@ -27,7 +27,6 @@ void parse_first_line(Graph& G,char* line){
 
 Graph parse(char* graph[MAX_EDGE_NUM], int line_num){
 	Graph G;
-	int EdgeCounter = 0;
 	int i = 0;
 
 	parse_first_line(G,graph[0]);
@@ -49,10 +48,8 @@ Graph parse(char* graph[MAX_EDGE_NUM], int line_num){
 		ss >> s;
 		int cost = stoi(s);
 
-		G.add_Edge(EdgeCounter,from,to,bandwidth,cost);
-		EdgeCounter++;
-		G.add_Edge(EdgeCounter,to,from,bandwidth,cost);
-		EdgeCounter++;
+		G.add_Edge(G.GetAnID(),from,to,bandwidth,cost);
+		G.add_Edge(G.GetAnID(),to,from,bandwidth,cost);
 	}
 
 	for(i = halfp + 1;i < line_num;i++){

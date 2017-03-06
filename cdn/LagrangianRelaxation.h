@@ -39,6 +39,8 @@ public:
 	unordered_set<Edge*> get_rij(unordered_set<Vertex*>& S); 
 	int r_pi(unordered_set<Edge*>& R_ij);
 	int C_ij_pi(int i,int j,Edge* edge);
+
+	void create_pesudo_source();
 };
 
 typedef LagrangianRelaxation LR;

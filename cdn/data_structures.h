@@ -63,7 +63,8 @@ public:
 class Graph
 {
 public:
-    Graph() = default;
+    Graph():i_counter(0){}
+
     void add_Edge(int id,
         int from,
 	    int to,
@@ -99,6 +100,10 @@ public:
 		return V[id];
 	}
 
+	int GetAnID(){
+		return i_counter++;
+	}
+
 	void debug_print(){
 		cout << V.size() << " " << E.size() / 2 << " " << C.size() << endl;
 	}
@@ -110,6 +115,8 @@ public:
 	int VertexNum;
 	int ConsumerNum;
 	int ServerCost;
+private:
+    int i_counter;
 };
 
 #endif//__DATA_STRUCTURE_H__
