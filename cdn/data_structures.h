@@ -4,8 +4,10 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <map>
-
+#include <string>
 #include <iostream>
+#include <vector>
+#include <list>
 
 using namespace std;
 
@@ -18,10 +20,11 @@ public:
     int id;
 	int pi;//
 	int d;//current resource
+	int consumer_id;
 	unordered_set<int> EdgesOut;
 	unordered_set<int> EdgesIn;
 
-    Vertex(int id):id(id),pi(0),d(0){}
+    Vertex(int id):id(id),pi(0),d(0),consumer_id(-1){}
 	Vertex(){}
 };
 
@@ -48,6 +51,7 @@ public:
 	int bandwidth;
 	int cost;
 	int x;//流量
+	int visited;
 
     Edge(int id,
         int from,
@@ -55,7 +59,7 @@ public:
 	    int bandwidth,
 	    int cost):
 		id(id),from(from),to(to),bandwidth(bandwidth),cost(cost),
-		x(0)
+		x(0),visited(0)
 		{}
 	Edge(){}
 };
@@ -91,6 +95,7 @@ public:
 
 		for(auto& cp:C){
 			GetVertex(cp.second.fromVertex).d = - cp.second.requirement;
+			GetVertex(cp.second.fromVertex).consumer_id = cp.second.id;
 		}
 	}
 
@@ -106,6 +111,87 @@ public:
 
 	void debug_print(){
 		cout << V.size() << " " << E.size() / 2 << " " << C.size() << endl;
+	}
+
+	void start_from_source(vector<list<int>>& result,list<int> path,Vertex* node,int flow){
+		
+		for(auto e:node->EdgesOut){
+			cout << "node: " << node->id << " flow " << flow << endl;
+			if(flow <= 0)
+		        return;
+			auto& edge = E.at(e);
+			if(edge.x > 0 && edge.visited < edge.x){//还有空余带宽
+			    cout << "x " << edge.x << " visited " << edge.visited << endl;
+			    int next_flow;
+				if(flow > edge.x - edge.visited)
+				    next_flow = edge.x - edge.visited;
+				else
+				    next_flow = flow;
+				flow -= next_flow;//减去被分流的部
+				edge.visited += next_flow;
+				auto& next_node = V.at(edge.to);
+				if(next_node.consumer_id >= 0){
+					path.push_back(next_node.id);
+					result.push_back(path);
+					result.back().push_back(next_node.consumer_id);
+					result.back().push_back(next_flow);
+				}
+				cout << " next node: " << next_node.id << " next_flow " << next_flow << endl;
+				start_from_source(result,path,&next_node,next_flow);
+			}
+		}
+	}
+
+	int total_cost(){
+		int sum = 0;
+		for(auto& e:E){
+			if(e.second.from >= 0){// not pesudo source
+			    sum += e.second.cost * e.second.x;
+			}
+		}
+
+		for(int out_from:V[-1].EdgesOut){
+			if(E[out_from].x > 0)
+			    sum += ServerCost;
+		}
+		return sum;
+	}
+
+	string to_String(){
+		vector<list<int>> result;
+		unordered_map<int,int> real_source;
+		for(auto pesudo_source_out:V.at(-1).EdgesOut){
+			if(E.at(pesudo_source_out).x > 0){//has some flow
+			    real_source[E.at(pesudo_source_out).to] = E.at(pesudo_source_out).x;
+			}
+		}
+
+		for(auto p : real_source){
+			list<int> line;
+			line.push_back(p.first);
+			Vertex* tmp = &V.at(p.first);
+			cout << p.second << endl;
+			start_from_source(result,line,tmp,p.second);
+		}
+		string newline = "\n";
+		string ret;
+		ret += to_string(int(result.size())) + newline;
+		ret += newline;
+		for(auto& line_list:result){
+			bool first = true;
+			for(int num:line_list){
+				if(first){
+					ret += to_string(num);
+					first = false;
+				}
+				else{
+					ret += " ";
+					ret += to_string(num);
+				}
+			}
+			ret += newline;
+		}
+		return ret;
 	}
 
     map<int,Edge> E;

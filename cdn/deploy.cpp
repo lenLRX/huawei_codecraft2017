@@ -13,7 +13,11 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
 	G.debug_print();
 	LR optimizer(G);
 	optimizer.create_pesudo_source();
+	//optimizer.rand_a_source();
 	optimizer.optimize();
+	optimizer.check();
+	//cout << optimizer.G.total_cost() << endl;
+	//cout << optimizer.G.to_String() << endl;
 	// 需要输出的内容
 	char * topo_file = (char *)"17\n\n0 8 0 20\n21 8 0 20\n9 11 1 13\n21 22 2 20\n23 22 2 8\n1 3 3 11\n24 3 3 17\n27 3 3 26\n24 3 3 10\n18 17 4 11\n1 19 5 26\n1 16 6 15\n15 13 7 13\n4 5 8 18\n2 25 9 15\n0 7 10 10\n23 24 11 23";
 
@@ -29,17 +33,17 @@ void testLR(){
 	Graph G;
 	G.VertexNum = 4;
 	G.EdgeNum = 6;
-	G.add_Edge(0,1,2,2,5);
-	G.add_Edge(1,2,4,1,2);
-	G.add_Edge(2,1,3,2,1);
-	G.add_Edge(3,3,4,5,0);
-	G.add_Edge(4,2,3,3,4);
-	G.add_Edge(5,3,2,2,3);
+	G.add_Edge(G.GetAnID(),1,2,2,5);
+	G.add_Edge(G.GetAnID(),2,4,1,2);
+	G.add_Edge(G.GetAnID(),1,3,2,1);
+	G.add_Edge(G.GetAnID(),3,4,5,0);
+	G.add_Edge(G.GetAnID(),2,3,3,4);
+	G.add_Edge(G.GetAnID(),3,2,2,3);
 
     Vertex v1(1);
 	v1.EdgesOut.insert(0);
 	v1.EdgesOut.insert(2);
-	v1.d = 3;
+	//v1.d = 3;
 	G.V[1] = v1;
 
 	Vertex v2(2);
@@ -47,7 +51,7 @@ void testLR(){
 	v2.EdgesOut.insert(4);
 	v2.EdgesIn.insert(0);
 	v2.EdgesIn.insert(5);
-	v2.d = 2;
+	//v2.d = 2;
 	G.V[2] = v2;
 
 	Vertex v3(3);
@@ -64,15 +68,16 @@ void testLR(){
 	v4.d = -4;
 	G.V[4] = v4;
 
-	LR optmizer(G);
-	optmizer.optimize();
+	LR optimizer(G);
+	optimizer.create_pesudo_source();
+	optimizer.optimize();
 	cout << "test optimize done" << endl;
 
 	for(int i = 1;i < 5;i++){
-		cout << "G.V[" << i << "]= " << optmizer.G.V[i].d << endl;
+		cout << "G.V[" << i << "]= " << optimizer.G.V[i].d << endl;
 	}
 
-	for(auto& e:optmizer.G.E){
+	for(auto& e:optimizer.G.E){
 		cout << e.second.from << " => " << e.second.to << " x: " << e.second.x << endl;
 	}
 }

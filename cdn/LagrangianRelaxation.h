@@ -41,6 +41,8 @@ public:
 	int C_ij_pi(int i,int j,Edge* edge);
 
 	void create_pesudo_source();
+	void rand_a_source();
+	void check();
 };
 
 typedef LagrangianRelaxation LR;
