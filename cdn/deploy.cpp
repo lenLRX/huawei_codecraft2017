@@ -40,37 +40,65 @@ void testLR(){
 	G.add_Edge(G.GetAnID(),2,3,3,4);
 	G.add_Edge(G.GetAnID(),3,2,2,3);
 
+    //TODO: use initializer list
     Vertex v1(1);
-	v1.EdgesOut.insert(0);
-	v1.EdgesOut.insert(2);
+	v1.EdgesOut.insert(1);
+	v1.EdgesIn.insert(-1);
+	v1.EdgesOut.insert(3);
+	v1.EdgesIn.insert(-3);
 	//v1.d = 3;
 	G.V[1] = v1;
 
 	Vertex v2(2);
-	v2.EdgesOut.insert(1);
-	v2.EdgesOut.insert(4);
-	v2.EdgesIn.insert(0);
-	v2.EdgesIn.insert(5);
+	v2.EdgesOut.insert(2);
+	v2.EdgesIn.insert(-2);
+
+	v2.EdgesOut.insert(5);
+	v2.EdgesIn.insert(-5);
+
+	v2.EdgesIn.insert(1);
+	v2.EdgesOut.insert(-1);
+
+	v2.EdgesIn.insert(6);
+	v2.EdgesOut.insert(-6);
 	//v2.d = 2;
 	G.V[2] = v2;
 
 	Vertex v3(3);
-	v3.EdgesOut.insert(3);
-	v3.EdgesOut.insert(5);
-	v3.EdgesIn.insert(2);
-	v3.EdgesIn.insert(4);
+	v3.EdgesOut.insert(4);
+	v3.EdgesIn.insert(-4);
+
+	v3.EdgesOut.insert(6);
+	v3.EdgesIn.insert(-6);
+
+	v3.EdgesIn.insert(3);
+	v3.EdgesOut.insert(-3);
+
+	v3.EdgesIn.insert(5);
+	v3.EdgesOut.insert(-5);
+
 	v3.d = -1;
 	G.V[3] = v3;
 
 	Vertex v4(4);
-	v4.EdgesIn.insert(1);
-	v4.EdgesIn.insert(3);
+	v4.EdgesIn.insert(2);
+	v4.EdgesOut.insert(-2);
+
+	v4.EdgesIn.insert(4);
+	v4.EdgesOut.insert(-4);
+
 	v4.d = -4;
 	G.V[4] = v4;
+
+	Vertex v5(5);
+	//v5.EdgesIn.insert(7);
+	//v5.EdgesOut.insert(-7);
+	G.V[5] = v5;
 
 	LR optimizer(G);
 	optimizer.create_pesudo_source();
 	optimizer.optimize();
+	optimizer.check();
 	cout << "test optimize done" << endl;
 
 	for(int i = 1;i < 5;i++){

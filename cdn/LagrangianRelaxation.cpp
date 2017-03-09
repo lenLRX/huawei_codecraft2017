@@ -6,6 +6,10 @@
 #include <map>
 #include <set>
 #include <limits>
+#include <cassert>
+#include <queue>
+
+#define LEN_DBG
 
 void LagrangianRelaxation::optimize(){
 	unordered_set<Vertex*> excess_set;
@@ -37,6 +41,7 @@ void LagrangianRelaxation::optimize(){
 				if(vp.second.d < 0)
 				    deficit_set.insert(&vp.second);
 			}
+			cout << excess_set.size() << endl;
 			if(excess_set.empty() && deficit_set.empty())
 			    break;
 			else{
@@ -97,17 +102,30 @@ void LagrangianRelaxation::optimize(){
 #ifdef LEN_DBG
 					cout << "r->from " << r->from << " r->to " << r->to << endl;
 #endif
-					if(r->from == -1){
-						G.V.at(r->from).d -= 1;
-						G.V.at(r->to).d += 1;
-						r->x += 1;
+                    if(r->id > 0){
+						if(r->from == -1){
+							G.V.at(r->from).d -= 1;
+							G.V.at(r->to).d += 1;
+							r->x += 1;
+							G.E.at(-r->id).bandwidth = r->x;
+						}
+						else{
+							//首先沿(S,S')中所有满足Cij_pi=0的弧(i,j)增广流量使之饱和
+							G.V.at(r->from).d -= (r->bandwidth - r->x);
+							G.V.at(r->to).d += (r->bandwidth - r->x);
+							r->x = r->bandwidth;
+							G.E.at(-r->id).bandwidth = r->bandwidth;
+						}
 					}
 					else{
-						//首先沿(S,S')中所有满足Cij_pi=0的弧(i,j)增广流量使之饱和
-						G.V.at(r->from).d -= (r->bandwidth - r->x);
-						G.V.at(r->to).d += (r->bandwidth - r->x);
-						r->x = r->bandwidth;
+						//清空残留网络对应的这条边
+						Edge& originalEdge = G.E.at(-r->id);
+						G.V.at(r->from).d -= originalEdge.x;
+						G.V.at(r->to).d += originalEdge.x;
+						originalEdge.x = 0;
+						r->bandwidth = 0;
 					}
+					
 				}
 				if(r->bandwidth - r->x > 0){
 					minvec.push_back(C_ij_pi(r->from,r->to,r));
@@ -134,18 +152,43 @@ void LagrangianRelaxation::optimize(){
 				e_j = G.V.at(pred.back()).d;
 				minvec.push_back(e_s);
 				minvec.push_back(-e_j);
-				vector<Edge*> path;
+
+				vector<Edge*> path = dijkstra(pred.front(),pred.back());
+
+				for(auto pE:path){
+					if(pE->id > 0)
+					    minvec.push_back(pE->bandwidth - pE->x);
+				    else
+					    minvec.push_back(pE->bandwidth);
+				}
+
+				/*
+				vector<pair<Edge*,Edge*>> path;
 				for(int i = 0;i < pred.size() -1;i++){
 					auto& from = G.V.at(pred[i]);
+					//取两节点间所有边的流量之和的(既然来回费用相等)
+					int sum = 0;
+					pair<Edge*,Edge*> p(nullptr,nullptr);//正向弧和反向弧
 					for(int e:from.EdgesOut){
 						Edge* pe = &G.E.at(e);
 						if(pe->to == pred[i+1]){
-							path.push_back(pe);
-							minvec.push_back(pe->bandwidth - pe->x);
-							break;
+							if(pe->id > 0){
+								p.first = pe;
+								sum += pe->bandwidth - pe->x;
+							}
+							else{
+								p.second = pe;
+								sum += pe->bandwidth;
+							}
+							    
 						}
 					}
+					if(p.first == nullptr && p.second == nullptr)
+					    assert(false);
+					minvec.push_back(sum);
+					path.push_back(p);
 				}
+				*/
 				/*
 				for(auto r:pred){
 					minvec.push_back(r->bandwidth - r->x);
@@ -157,8 +200,42 @@ void LagrangianRelaxation::optimize(){
 				//源减少d，终点增加d
 				G.V.at(pred.front()).d -= a;
 				G.V.at(pred.back()).d += a;
+				//拆分流量a
 				for(auto r:path){
-					r->x += a;
+					/*
+					int local_a = a;
+					if(p.second != nullptr){//如果有反向弧,优先填满反向弧
+						if(p.second->bandwidth >= local_a){//如果反向弧的残留容量大于等于a则优先填满反向弧
+						    p.second->bandwidth -= local_a;
+							G.E.at(-p.second->id).x -= local_a;
+						}
+						else{//流量足够大，直接把反向弧清空
+						    local_a -= p.second->bandwidth;
+							p.second->bandwidth = 0;
+							G.E.at(-p.second->id).x = 0;
+						}
+					}
+					if(p.first == nullptr){
+						assert(local_a == 0);
+						continue;
+					}
+					//将剩下流量压入正向边
+					p.first->x += local_a;
+					assert(p.first->x <= p.first->bandwidth);
+					//处理该正向边的反向边
+					G.E.at(-p.first->id).bandwidth = p.first->x;
+					*/
+					
+					//legacy codes
+					if(r->id > 0){
+						r->x += a;
+					    G.E.at(-r->id).bandwidth = r->x;
+					}
+					else{
+						G.E.at(-r->id).x -= a;
+						r->bandwidth = G.E.at(-r->id).x;
+					}
+					
 				}
 			}
 			else{
@@ -243,9 +320,21 @@ void LagrangianRelaxation::create_pesudo_source(){
 		e.cost = 0;
 		e.x = 0;
 
+		Edge ResidualEdge;
+		ResidualEdge.id = -e.id;
+		ResidualEdge.from = e.to;
+		ResidualEdge.to = e.from;
+		ResidualEdge.bandwidth = e.bandwidth;
+		ResidualEdge.cost = -e.cost;
+		ResidualEdge.x = 0;
+		e.ResidualEdgeNo = -e.id;
+
 		G.E[e.id] = e;
+		G.E[-e.id] = ResidualEdge;
 		pv.second.EdgesIn.insert(e.id);
+		pv.second.EdgesOut.insert(-e.id);
 		pesudo_source.EdgesOut.insert(e.id);
+		pesudo_source.EdgesIn.insert(-e.id);
 
 		cout << "e.id " << e.id << endl;
 
@@ -303,4 +392,65 @@ void LagrangianRelaxation::check(){
 		if(vp.second.d !=0 )
 		    cout << "d: " << vp.second.d << endl;
 	}
+}
+
+vector<Edge*> LagrangianRelaxation::dijkstra(int source,int dest){
+	vector<Edge*> ret;
+	auto cmp = [this](int lhs,int rhs)->bool{
+		return this->G.V.at(lhs).distance < this->G.V.at(rhs).distance;
+	};
+
+	vector<int> Q;
+	for(auto& v:G.V){
+		v.second.distance = numeric_limits<int>::max();
+		Q.push_back(v.first);
+	}
+	G.V.at(source).distance = 0;
+
+	size_t v_size = G.V.size();
+	
+	for(size_t i = 0;i < v_size;i++){
+		int min_element_pos = -1;
+		int min_value = numeric_limits<int>::max();
+		for(size_t j = i;j < v_size;j++){
+			if(G.V.at(Q[j]).distance < min_value){
+				min_value = G.V.at(Q[j]).distance;
+				min_element_pos = j;
+			}
+		}
+
+		swap(Q[i],Q[min_element_pos]);
+
+		if(Q[i] == dest){
+			break;//early stop
+		}
+
+		Vertex& v = G.V.at(Q[i]);
+
+		int my_distance = v.distance;
+
+		for(auto E_id:v.EdgesOut){
+			Edge& e = G.E.at(E_id);
+			Vertex& u = G.V.at(e.to);
+			if(e.bandwidth > 0 && e.bandwidth - e.x > 0 
+			    && u.distance > v.distance + e.cost){
+				u.distance = v.distance + e.cost;
+				u.from_edge = &e;
+			}
+		}
+	}
+
+	Vertex* pVertex = &G.V.at(dest);
+
+    //back trace
+	while(true){
+		ret.push_back(pVertex->from_edge);
+		pVertex = &G.V.at(pVertex->from_edge->from);
+		if(pVertex->id == source)
+		    break;
+	}
+
+	reverse(ret.begin(),ret.end());
+
+	return ret;
 }

@@ -12,6 +12,7 @@
 using namespace std;
 
 class Graph;
+class Edge;//forward decl
 
 class Vertex
 {
@@ -23,9 +24,13 @@ public:
 	int consumer_id;
 	unordered_set<int> EdgesOut;
 	unordered_set<int> EdgesIn;
+	int distance;
+	Edge* from_edge;
 
-    Vertex(int id):id(id),pi(0),d(0),consumer_id(-1){}
-	Vertex(){}
+    Vertex(int id):id(id),
+	pi(0),d(0),consumer_id(-1),distance(-1),from_edge(nullptr){}
+	Vertex():id(0),
+	pi(0),d(0),consumer_id(-1),distance(-1),from_edge(nullptr){}
 };
 
 class Consumer
@@ -52,14 +57,16 @@ public:
 	int cost;
 	int x;//流量
 	int visited;
+	int ResidualEdgeNo;
 
     Edge(int id,
         int from,
 	    int to,
 	    int bandwidth,
-	    int cost):
+	    int cost,
+		int ResidualEdgeNo = 0):
 		id(id),from(from),to(to),bandwidth(bandwidth),cost(cost),
-		x(0),visited(0)
+		x(0),visited(0),ResidualEdgeNo(ResidualEdgeNo)
 		{}
 	Edge(){}
 };
@@ -67,14 +74,15 @@ public:
 class Graph
 {
 public:
-    Graph():i_counter(0){}
+    Graph():i_counter(1){}
 
     void add_Edge(int id,
         int from,
 	    int to,
 	    int bandwidth,
 	    int cost){
-		E[id] = Edge(id,from,to,bandwidth,cost);
+		E[id] = Edge(id,from,to,bandwidth,cost,-id);
+		E[-id] = Edge(-id,to,from,0,-cost);
 	}
 
 	void add_Vertex(int id){
