@@ -9,9 +9,10 @@ using namespace std;
 
 class LagrangianRelaxation{
 public:
-    LagrangianRelaxation(Graph G):G(G){
+    LagrangianRelaxation(Graph G):OriginalGraph(G){
 	}
     Graph G;
+	Graph OriginalGraph;
 
 	void optimize();
 
@@ -41,7 +42,11 @@ public:
 	int C_ij_pi(int i,int j,Edge* edge);
 	vector<Edge*> dijkstra(int source,int dest);
 
-	void create_pesudo_source();
+	void refresh(){
+		G = OriginalGraph;
+	}
+
+	void create_pesudo_source(unordered_set<int> ExcludingVertex = unordered_set<int>());
 	void rand_a_source();
 	void check();
 };

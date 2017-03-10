@@ -128,6 +128,7 @@ public:
 			if(flow <= 0)
 		        return;
 			auto& edge = E.at(e);
+			cout << edge.x << endl;
 			if(edge.x > 0 && edge.visited < edge.x){//还有空余带宽
 			    cout << "x " << edge.x << " visited " << edge.visited << endl;
 			    int next_flow;
@@ -153,7 +154,7 @@ public:
 	int total_cost(){
 		int sum = 0;
 		for(auto& e:E){
-			if(e.second.from >= 0){// not pesudo source
+			if(e.second.from >= 0 && e.second.id > 0){// not pesudo source
 			    sum += e.second.cost * e.second.x;
 			}
 		}
@@ -178,14 +179,25 @@ public:
 			list<int> line;
 			line.push_back(p.first);
 			Vertex* tmp = &V.at(p.first);
-			cout << p.second << endl;
-			start_from_source(result,line,tmp,p.second);
+			if(tmp->consumer_id >= 0){//直接连接消费节点
+			    result.push_back(line);
+				result.back().push_back(tmp->consumer_id);
+				result.back().push_back(p.second);
+				
+			}
+			else{
+				cout << p.second << endl;
+			    start_from_source(result,line,tmp,p.second);
+			}
+			
 		}
 		string newline = "\n";
 		string ret;
 		ret += to_string(int(result.size())) + newline;
 		ret += newline;
-		for(auto& line_list:result){
+		size_t line_num = result.size();
+		for(size_t i = 0;i < line_num;i++){
+			auto& line_list = result[i];
 			bool first = true;
 			for(int num:line_list){
 				if(first){
@@ -197,7 +209,8 @@ public:
 					ret += to_string(num);
 				}
 			}
-			ret += newline;
+			if(i != line_num - 1)
+			    ret += newline;
 		}
 		return ret;
 	}

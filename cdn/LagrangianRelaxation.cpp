@@ -9,7 +9,7 @@
 #include <cassert>
 #include <queue>
 
-#define LEN_DBG
+//#define LEN_DBG
 
 void LagrangianRelaxation::optimize(){
 	unordered_set<Vertex*> excess_set;
@@ -41,7 +41,9 @@ void LagrangianRelaxation::optimize(){
 				if(vp.second.d < 0)
 				    deficit_set.insert(&vp.second);
 			}
+#ifdef LEN_DBG
 			cout << excess_set.size() << endl;
+#endif
 			if(excess_set.empty() && deficit_set.empty())
 			    break;
 			else{
@@ -66,7 +68,7 @@ void LagrangianRelaxation::optimize(){
 
 			R_ij = get_rij(S);
 			r_pi_S = r_pi(R_ij);
-			if(e_S > r_pi_S)
+			if(false && e_S > r_pi_S)//WTF WTF????
 			    goto step3;
 			else
 			{
@@ -98,7 +100,7 @@ void LagrangianRelaxation::optimize(){
 		    minvec.clear();
 		    R_ij = get_rij(S);
 			for(auto r:R_ij){
-				if(C_ij_pi(r->from,r->to,r) == 0){
+				if(C_ij_pi(r->from,r->to,r) == 0 && r->id > 0){
 #ifdef LEN_DBG
 					cout << "r->from " << r->from << " r->to " << r->to << endl;
 #endif
@@ -127,9 +129,15 @@ void LagrangianRelaxation::optimize(){
 					}
 					
 				}
-				if(r->bandwidth - r->x > 0){
-					minvec.push_back(C_ij_pi(r->from,r->to,r));
+				if(r->id > 0){
+					if(r->bandwidth - r->x > 0){
+						minvec.push_back(C_ij_pi(r->from,r->to,r));
+					}
 				}
+				else{
+					minvec.push_back(1);
+				}
+				
 			}
 			//然后将S中的每个节点上的势增加a=min{Cij_pi|(i,j)属于(S,S'),rij > 0}转STEP1
 			//cout << "len(minvec) " << minvec.size() << endl;
@@ -288,7 +296,7 @@ int LagrangianRelaxation::r_pi(unordered_set<Edge*>& R_ij){
 	for(auto r:R_ij){
 		if(C_ij_pi(r->from,r->to,r) == 0){
 			if(r->from == - 1){
-				sum += 1;
+				continue;
 			}
 			else
 			    sum += (r->bandwidth - r->x);
@@ -302,16 +310,22 @@ int LagrangianRelaxation::C_ij_pi(int i,int j,Edge* edge){
 	int pi_i = G.V.at(i).pi;
 	int pi_j = G.V.at(j).pi;
 	int c_ij = edge->cost;
-	return c_ij - pi_i + pi_j;
+	if(edge->id > 0)
+	    return c_ij - pi_i + pi_j;
+	else
+	    return pi_j - pi_i - c_ij;
 }
 
-void LagrangianRelaxation::create_pesudo_source(){
+void LagrangianRelaxation::create_pesudo_source(unordered_set<int> ExcludingVertex){
 	int pesudo_source_id = -1;
 	Vertex pesudo_source(pesudo_source_id);
 
 	int sum = 0;
 
 	for(auto& pv:G.V){
+		sum += pv.second.d;
+		if(ExcludingVertex.count(pv.first))
+		    continue;
 		Edge e;
 		e.id = G.GetAnID();
 		e.from = pesudo_source_id;
@@ -338,7 +352,7 @@ void LagrangianRelaxation::create_pesudo_source(){
 
 		cout << "e.id " << e.id << endl;
 
-		sum += pv.second.d;
+		
 	}
 
 	pesudo_source.d = -sum;
@@ -378,11 +392,13 @@ void LagrangianRelaxation::check(){
 	for(auto& vp:G.V){
 		int sum = 0;
 		for(auto edge_no:vp.second.EdgesIn){
-			sum += G.E[edge_no].x;
+			if(G.E[edge_no].id > 0)
+			    sum += G.E[edge_no].x;
 		}
 
 		for(auto edge_no:vp.second.EdgesOut){
-			sum -= G.E[edge_no].x;
+			if(G.E[edge_no].id > 0)
+			    sum -= G.E[edge_no].x;
 		}
 
 		if(sum != 0){
@@ -408,6 +424,8 @@ vector<Edge*> LagrangianRelaxation::dijkstra(int source,int dest){
 	G.V.at(source).distance = 0;
 
 	size_t v_size = G.V.size();
+
+	set<int> excluding_set;
 	
 	for(size_t i = 0;i < v_size;i++){
 		int min_element_pos = -1;
@@ -421,6 +439,8 @@ vector<Edge*> LagrangianRelaxation::dijkstra(int source,int dest){
 
 		swap(Q[i],Q[min_element_pos]);
 
+		excluding_set.insert(Q[i]);
+
 		if(Q[i] == dest){
 			break;//early stop
 		}
@@ -431,6 +451,8 @@ vector<Edge*> LagrangianRelaxation::dijkstra(int source,int dest){
 
 		for(auto E_id:v.EdgesOut){
 			Edge& e = G.E.at(E_id);
+			if(excluding_set.count(e.to))
+			    continue;
 			Vertex& u = G.V.at(e.to);
 			if(e.bandwidth > 0 && e.bandwidth - e.x > 0 
 			    && u.distance > v.distance + e.cost){
@@ -439,6 +461,7 @@ vector<Edge*> LagrangianRelaxation::dijkstra(int source,int dest){
 			}
 		}
 	}
+	
 
 	Vertex* pVertex = &G.V.at(dest);
 
