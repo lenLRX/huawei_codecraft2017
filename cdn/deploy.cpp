@@ -15,6 +15,10 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
 	LR optimizer(G);
 	unordered_set<int> exclude;
 	exclude.insert(34);
+	exclude.insert(32);
+	exclude.insert(3);
+	exclude.insert(33);
+	exclude.insert(44);
 	optimizer.refresh();
 	optimizer.create_pesudo_source(exclude);
 	//optimizer.rand_a_source();

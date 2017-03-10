@@ -14,7 +14,7 @@ public:
     Graph G;
 	Graph OriginalGraph;
 
-	void optimize();
+	bool optimize();
 
 	/*
 	STEP1:如果网络中不含有任何盈余节点和亏空节点，则已经得到最优解；否则在残量网络中选择一个盈余节点s，令S={s}，继续下一步

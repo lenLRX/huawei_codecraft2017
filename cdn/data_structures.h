@@ -124,13 +124,16 @@ public:
 	void start_from_source(vector<list<int>>& result,list<int> path,Vertex* node,int flow){
 		
 		for(auto e:node->EdgesOut){
+#ifdef LEN_DBG
 			cout << "node: " << node->id << " flow " << flow << endl;
+#endif
 			if(flow <= 0)
 		        return;
 			auto& edge = E.at(e);
-			cout << edge.x << endl;
 			if(edge.x > 0 && edge.visited < edge.x){//还有空余带宽
+#ifdef LEN_DBG
 			    cout << "x " << edge.x << " visited " << edge.visited << endl;
+#endif
 			    int next_flow;
 				if(flow > edge.x - edge.visited)
 				    next_flow = edge.x - edge.visited;
@@ -139,13 +142,15 @@ public:
 				flow -= next_flow;//减去被分流的部
 				edge.visited += next_flow;
 				auto& next_node = V.at(edge.to);
+				path.push_back(next_node.id);
 				if(next_node.consumer_id >= 0){
-					path.push_back(next_node.id);
 					result.push_back(path);
 					result.back().push_back(next_node.consumer_id);
 					result.back().push_back(next_flow);
 				}
+#ifdef LEN_DBG
 				cout << " next node: " << next_node.id << " next_flow " << next_flow << endl;
+#endif
 				start_from_source(result,path,&next_node,next_flow);
 			}
 		}
@@ -186,7 +191,6 @@ public:
 				
 			}
 			else{
-				cout << p.second << endl;
 			    start_from_source(result,line,tmp,p.second);
 			}
 			

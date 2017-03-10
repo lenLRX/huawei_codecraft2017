@@ -11,7 +11,7 @@
 
 //#define LEN_DBG
 
-void LagrangianRelaxation::optimize(){
+bool LagrangianRelaxation::optimize(){
 	unordered_set<Vertex*> excess_set;
 	unordered_set<Vertex*> deficit_set;
 	unordered_set<Vertex*> S;
@@ -45,7 +45,7 @@ void LagrangianRelaxation::optimize(){
 			cout << excess_set.size() << endl;
 #endif
 			if(excess_set.empty() && deficit_set.empty())
-			    break;
+			    return true;
 			else{
 				S.insert(*excess_set.begin());
 				pred.push_back((*excess_set.begin())->id);
@@ -92,7 +92,9 @@ void LagrangianRelaxation::optimize(){
 					}
 			    }
 			}
-			cout << "error" << endl;
+			goto step3;
+			return false;
+			//cout << "error" << endl;
 		step3:
 #ifdef LEN_DBG
 		    cout << "step3" << endl;
@@ -100,6 +102,7 @@ void LagrangianRelaxation::optimize(){
 		    minvec.clear();
 		    R_ij = get_rij(S);
 			for(auto r:R_ij){
+				/*
 				if(C_ij_pi(r->from,r->to,r) == 0 && r->id > 0){
 #ifdef LEN_DBG
 					cout << "r->from " << r->from << " r->to " << r->to << endl;
@@ -129,13 +132,10 @@ void LagrangianRelaxation::optimize(){
 					}
 					
 				}
-				if(r->id > 0){
-					if(r->bandwidth - r->x > 0){
-						minvec.push_back(C_ij_pi(r->from,r->to,r));
-					}
-				}
-				else{
-					minvec.push_back(1);
+				*/
+
+				if(r->bandwidth - r->x > 0){
+					minvec.push_back(C_ij_pi(r->from,r->to,r));
 				}
 				
 			}
@@ -247,7 +247,8 @@ void LagrangianRelaxation::optimize(){
 				}
 			}
 			else{
-				cout << "empty" << endl;
+				return false;
+				//cout << "empty" << endl;
 			}
 			goto step1;
 	}while(0);
