@@ -163,6 +163,9 @@ bool LagrangianRelaxation::optimize(){
 
 				vector<Edge*> path = dijkstra(pred.front(),pred.back());
 
+				if(path.size() == 0)
+				    return false;
+
 				for(auto pE:path){
 					if(pE->id > 0)
 					    minvec.push_back(pE->bandwidth - pE->x);
@@ -311,10 +314,20 @@ int LagrangianRelaxation::C_ij_pi(int i,int j,Edge* edge){
 	int pi_i = G.V.at(i).pi;
 	int pi_j = G.V.at(j).pi;
 	int c_ij = edge->cost;
-	if(edge->id > 0)
+
+    /*
+	if(edge->from == -1){
+		if(edge->id > 0)
+		    c_ij = G.ServerCost / (edge->x + 1);
+		else
+		    c_ij = G.ServerCost / edge->bandwidth;
+	}
+	*/
+
+	//if(edge->id > 0)
 	    return c_ij - pi_i + pi_j;
-	else
-	    return pi_j - pi_i - c_ij;
+	//else
+	//    return pi_j - pi_i - c_ij;
 }
 
 void LagrangianRelaxation::create_pesudo_source(unordered_set<int> ExcludingVertex){
@@ -332,8 +345,10 @@ void LagrangianRelaxation::create_pesudo_source(unordered_set<int> ExcludingVert
 		e.from = pesudo_source_id;
 		e.to = pv.second.id;
 		e.bandwidth = numeric_limits<int>::max();
-		e.cost = 0;
+		e.cost = pesudoCost.at(pv.first);
 		e.x = 0;
+
+		//cout << pv.first << " : " << e.cost << endl;
 
 		Edge ResidualEdge;
 		ResidualEdge.id = -e.id;
@@ -351,14 +366,14 @@ void LagrangianRelaxation::create_pesudo_source(unordered_set<int> ExcludingVert
 		pesudo_source.EdgesOut.insert(e.id);
 		pesudo_source.EdgesIn.insert(-e.id);
 
-		cout << "e.id " << e.id << endl;
+		//cout << "e.id " << e.id << endl;
 
 		
 	}
 
 	pesudo_source.d = -sum;
 
-	cout << "pesudo_source.d " << pesudo_source.d << endl;
+	//cout << "pesudo_source.d " << pesudo_source.d << endl;
 
 	G.V[pesudo_source_id] = pesudo_source;
 }
@@ -403,7 +418,7 @@ void LagrangianRelaxation::check(){
 		}
 
 		if(sum != 0){
-			cout << "Vertex sum " << sum << endl;
+			cout << "ID : " << vp.first << " Vertex sum " << sum << endl;
 		}
 
 		if(vp.second.d !=0 )
@@ -428,7 +443,7 @@ vector<Edge*> LagrangianRelaxation::dijkstra(int source,int dest){
 
 	set<int> excluding_set;
 	
-	for(size_t i = 0;i < v_size;i++){
+	for(size_t i = 0;i < v_size - 1;i++){
 		int min_element_pos = -1;
 		int min_value = numeric_limits<int>::max();
 		for(size_t j = i;j < v_size;j++){
@@ -437,6 +452,9 @@ vector<Edge*> LagrangianRelaxation::dijkstra(int source,int dest){
 				min_element_pos = j;
 			}
 		}
+
+		if(min_element_pos < 0)
+		    return vector<Edge*>();
 
 		swap(Q[i],Q[min_element_pos]);
 
@@ -466,8 +484,20 @@ vector<Edge*> LagrangianRelaxation::dijkstra(int source,int dest){
 
 	Vertex* pVertex = &G.V.at(dest);
 
+	//cout << pVertex->distance << endl;
+
+	unordered_set<int> visited_set;
+
     //back trace
 	while(true){
+		
+		if(visited_set.count(pVertex->id)){
+			ret.clear();
+			break;
+		}
+		    
+		visited_set.insert(pVertex->id);
+
 		ret.push_back(pVertex->from_edge);
 		pVertex = &G.V.at(pVertex->from_edge->from);
 		if(pVertex->id == source)

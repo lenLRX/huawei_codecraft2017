@@ -1,6 +1,7 @@
 #ifndef __DATA_STRUCTURE_H__
 #define __DATA_STRUCTURE_H__
 
+#include <limits>
 #include <unordered_map>
 #include <unordered_set>
 #include <map>
@@ -8,6 +9,8 @@
 #include <iostream>
 #include <vector>
 #include <list>
+
+//#define LEN_DBG
 
 using namespace std;
 
@@ -39,9 +42,11 @@ public:
     int id;
 	int fromVertex;
 	int requirement;
+	int remaining_requirement;
 
     Consumer(const int id,const int fromVertex,const int requirement)
-:id(id),fromVertex(fromVertex),requirement(requirement)
+:id(id),fromVertex(fromVertex),requirement(requirement),
+remaining_requirement(requirement)
 	{}
 
 	Consumer(){}
@@ -122,6 +127,23 @@ public:
 	}
 
 	void start_from_source(vector<list<int>>& result,list<int> path,Vertex* node,int flow){
+
+		if(node->consumer_id >= 0){
+			result.push_back(path);
+			result.back().push_back(node->consumer_id);
+			Consumer& c = C.at(node->consumer_id);
+			if(flow > c.remaining_requirement){
+				result.back().push_back(c.remaining_requirement);
+				flow -= c.remaining_requirement;
+				c.remaining_requirement = 0;
+			}
+			else{
+				result.back().push_back(flow);
+				c.remaining_requirement -= flow;
+				flow = 0;
+			}
+			    
+		}
 		
 		for(auto e:node->EdgesOut){
 #ifdef LEN_DBG
@@ -143,11 +165,7 @@ public:
 				edge.visited += next_flow;
 				auto& next_node = V.at(edge.to);
 				path.push_back(next_node.id);
-				if(next_node.consumer_id >= 0){
-					result.push_back(path);
-					result.back().push_back(next_node.consumer_id);
-					result.back().push_back(next_flow);
-				}
+				
 #ifdef LEN_DBG
 				cout << " next node: " << next_node.id << " next_flow " << next_flow << endl;
 #endif
@@ -184,16 +202,7 @@ public:
 			list<int> line;
 			line.push_back(p.first);
 			Vertex* tmp = &V.at(p.first);
-			if(tmp->consumer_id >= 0){//直接连接消费节点
-			    result.push_back(line);
-				result.back().push_back(tmp->consumer_id);
-				result.back().push_back(p.second);
-				
-			}
-			else{
-			    start_from_source(result,line,tmp,p.second);
-			}
-			
+			start_from_source(result,line,tmp,p.second);
 		}
 		string newline = "\n";
 		string ret;

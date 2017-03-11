@@ -10,9 +10,24 @@ using namespace std;
 class LagrangianRelaxation{
 public:
     LagrangianRelaxation(Graph G):OriginalGraph(G){
+		for(auto& vp:G.V){
+			pesudoCost[vp.first] = 0;
+		}
 	}
     Graph G;
 	Graph OriginalGraph;
+	unordered_map<int,int> pesudoCost;
+
+	void updatePesudoCost(){
+		for(auto& pc:pesudoCost){
+			pesudoCost[pc.first] = 0;
+		}
+		for(auto pesudo_source_out:G.V.at(-1).EdgesOut){
+			if(G.E.at(pesudo_source_out).x > 0){//has some flow
+			    pesudoCost[G.E.at(pesudo_source_out).to] = G.ServerCost / G.E.at(pesudo_source_out).x;
+			}
+		}
+	}
 
 	bool optimize();
 
