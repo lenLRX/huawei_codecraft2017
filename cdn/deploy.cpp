@@ -1,8 +1,11 @@
+#include <chrono>
 #include "deploy.h"
 #include <stdio.h>
 #include "data_structures.h"
 #include "parse.h"
 #include "LagrangianRelaxation.h"
+#include <random>
+#include <algorithm>
 
 void testLR();
 
@@ -11,53 +14,105 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
 {
 	
 	Graph G = parse(topo,line_num);
-	G.debug_print();
+	//G.debug_print();
 	LR optimizer(G);
 	unordered_set<int> exclude;
 
 	Graph minGraph;
 	int minCost = numeric_limits<int>::max();
 
-	//for(auto& vp:optimizer.OriginalGraph.V)
-	for(int i = 0;i < optimizer.OriginalGraph.V.size();i++)
-	{
-		//exclude.insert(vp.first);
-		optimizer.refresh();
-		optimizer.create_pesudo_source(exclude);
-		//optimizer.rand_a_source();
-		bool b = optimizer.optimize();
-		if(!b)
-		    break;
-		//optimizer.check();
-		optimizer.updatePesudoCost();
-		int cost = optimizer.G.total_cost();
-		if(cost < minCost){
-			minCost = cost;
-			minGraph = optimizer.G;
-		}
-		//cout << optimizer.G.total_cost() << endl;
+	auto start_time = chrono::high_resolution_clock::now();
 
-		int max_id = -1;
-		int max_cost = 0;
+	default_random_engine generator;
 
-		for(auto& pc:optimizer.pesudoCost){
-			if(pc.second > 0 && pc.second > max_cost){
-				max_cost = pc.second;
-				max_id = pc.first;
-			}
-		}
+	vector<int> ids(optimizer.OriginalGraph.V.size());
 
-		exclude.insert(max_id);
-
-		//string result = optimizer.G.to_String();
-		//cout << result << endl;
+	for(int i = 0;i < ids.size();i++){
+		ids[i] = i;
 	}
-	
+	optimizer.refresh();
+	optimizer.dijkstraPrepare();
 
+	//for(auto& vp:optimizer.OriginalGraph.V)
+	for(int i = optimizer.OriginalGraph.C.size() - 2;i > 0 ;i--)
+	{
+		for(int times = 0;times < 10;){
+			exclude.clear();
+
+			
+		    vector<double> weight(optimizer.OriginalGraph.V.size());
+			for(auto& pv:optimizer.OriginalGraph.V){
+				/*
+				int sum = 0;
+				for(int e_no:pv.second.EdgesOut){
+					sum += optimizer.OriginalGraph.E.at(e_no).bandwidth
+					/optimizer.OriginalGraph.E.at(e_no).cost;
+				}
+				*/
+
+				weight[pv.first] = pv.second.weight;
+				cout << pv.first << " => " << pv.second.weight << endl;
+			}
+
+			discrete_distribution<int> distribution(weight.begin(),weight.end());
+			
+
+			
+
+			//random_shuffle(ids.begin(),ids.end());
+
+			for(int j = 0;j < i;j++){
+				//exclude.insert(ids[j]);
+				int ex = distribution(generator);
+				exclude.insert(ex);
+			}
+
+
+			auto time_now = chrono::high_resolution_clock::now();
+			if(chrono::duration_cast<chrono::seconds>(time_now - start_time).count() > 80)
+				break;
+			//exclude.insert(vp.first);
+			optimizer.refresh();
+			optimizer.create_pesudo_source(exclude);
+			//optimizer.rand_a_source();
+			bool b = optimizer.optimize();
+			if(!b)
+				continue;
+			//optimizer.check();
+			optimizer.updatePesudoCost();
+			int cost = optimizer.G.total_cost();
+			if(cost < minCost){
+				minCost = cost;
+				minGraph = optimizer.G;
+			}
+			cout << optimizer.G.total_cost() << endl;
+
+			int max_id = -1;
+			int max_cost = 0;
+
+			for(auto& pc:optimizer.pesudoCost){
+				if(pc.second > 0 && pc.second > max_cost){
+					max_cost = pc.second;
+					max_id = pc.first;
+				}
+			}
+
+			times++;
+
+			//exclude.insert(max_id);
+
+			//string result = optimizer.G.to_String();
+			//cout << result << endl;
+		}
+		
+	}
+
+    /*
 	for(auto& e:optimizer.G.E){
 		if(e.second.x > 0)
 		    cout << e.second.from << " => " << e.second.to << " x: " << e.second.x << endl;
 	}
+	*/
 	
 	// 需要输出的内容
 	char * topo_file = (char *)"17\n\n0 8 0 20\n21 8 0 20\n9 11 1 13\n21 22 2 20\n23 22 2 8\n1 3 3 11\n24 3 3 17\n27 3 3 26\n24 3 3 10\n18 17 4 11\n1 19 5 26\n1 16 6 15\n15 13 7 13\n4 5 8 18\n2 25 9 15\n0 7 10 10\n23 24 11 23";
@@ -66,7 +121,7 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
 
 
 	// 直接调用输出文件的方法输出到指定文件中(ps请注意格式的正确性，如果有解，第一行只有一个数据；第二行为空；第三行开始才是具体的数据，数据之间用一个空格分隔开)
-	write_result(minGraph.to_String().c_str(), filename);
+	//write_result(minGraph.to_String().c_str(), filename);
 
 }
 

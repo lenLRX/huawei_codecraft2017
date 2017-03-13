@@ -11,7 +11,7 @@
 
 //#define LEN_DBG
 
-bool LagrangianRelaxation::optimize(){
+bool LagrangianRelaxation::optimize(bool patrial){
 	unordered_set<Vertex*> excess_set;
 	unordered_set<Vertex*> deficit_set;
 	unordered_set<Vertex*> S;
@@ -241,10 +241,17 @@ bool LagrangianRelaxation::optimize(){
 					if(r->id > 0){
 						r->x += a;
 					    G.E.at(-r->id).bandwidth = r->x;
+						if(r->from == -1){
+							r->cost = 0;
+						}
 					}
 					else{
 						G.E.at(-r->id).x -= a;
 						r->bandwidth = G.E.at(-r->id).x;
+						if(r->to == -1 && r->bandwidth == 0){
+							r->cost = pesudoCost.at(r->from);
+							//r->cost = G.ServerCost;
+						}
 					}
 					
 				}
@@ -338,14 +345,17 @@ void LagrangianRelaxation::create_pesudo_source(unordered_set<int> ExcludingVert
 
 	for(auto& pv:G.V){
 		sum += pv.second.d;
-		if(ExcludingVertex.count(pv.first))
+		if(ExcludingVertex.count(pv.first) == 0)
 		    continue;
+		//cout << pv.first << endl;
 		Edge e;
 		e.id = G.GetAnID();
 		e.from = pesudo_source_id;
 		e.to = pv.second.id;
 		e.bandwidth = numeric_limits<int>::max();
 		e.cost = pesudoCost.at(pv.first);
+		//e.cost = 0;
+		//e.cost = G.ServerCost;
 		e.x = 0;
 
 		//cout << pv.first << " : " << e.cost << endl;
@@ -507,4 +517,69 @@ vector<Edge*> LagrangianRelaxation::dijkstra(int source,int dest){
 	reverse(ret.begin(),ret.end());
 
 	return ret;
+}
+
+void LagrangianRelaxation::dijkstraPrepare(){
+	for(const auto& pv:G.V){
+		_dijkstraPrepare(pv.first);
+	}
+
+	OriginalGraph = G;
+}
+
+void LagrangianRelaxation::_dijkstraPrepare(int source){
+
+	vector<int> Q;
+	for(auto& v:G.V){
+		v.second.distance = numeric_limits<int>::max();
+		Q.push_back(v.first);
+	}
+	G.V.at(source).distance = 0;
+	int flow = -G.V.at(source).d;
+
+	size_t v_size = G.V.size();
+
+	set<int> excluding_set;
+	
+	for(size_t i = 0;i < v_size - 1;i++){
+		int min_element_pos = -1;
+		int min_value = numeric_limits<int>::max();
+		for(size_t j = i;j < v_size;j++){
+			if(G.V.at(Q[j]).distance < min_value){
+				min_value = G.V.at(Q[j]).distance;
+				min_element_pos = j;
+			}
+		}
+
+		if(min_element_pos < 0)
+		    break;//quit
+
+		swap(Q[i],Q[min_element_pos]);
+
+		excluding_set.insert(Q[i]);
+
+		Vertex& v = G.V.at(Q[i]);
+
+		int my_distance = v.distance;
+
+		for(auto E_id:v.EdgesOut){
+			Edge& e = G.E.at(E_id);
+			if(excluding_set.count(e.to))
+			    continue;
+			Vertex& u = G.V.at(e.to);
+			if(e.id > 0 && e.bandwidth - e.x >= flow 
+			    && u.distance > v.distance + e.cost){
+				u.distance = v.distance + e.cost;
+				u.from_edge = &e;
+			}
+		}
+	}
+
+	for(auto& vp:G.V){
+		if(vp.second.distance != numeric_limits<int>::max()){
+			//reachable
+			vp.second.weight += flow - vp.second.distance;
+		}
+	}
+
 }

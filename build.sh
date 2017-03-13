@@ -29,16 +29,4 @@ cmake ../cdn
 make
 
 cd ..
-mkdir code
-cp -r cdn code/cdn
-cd code/cdn
-rm -fr lib
-rm -f CMakeLists.txt
-rm -f cdn.cpp
-rm -f io.cpp
-cd ..
 tar -zcPf cdn.tar.gz *
-cp cdn.tar.gz ../
-rm -f cdn.tar.gz
-cd ..
-rm -rf code

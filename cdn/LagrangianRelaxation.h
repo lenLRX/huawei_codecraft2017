@@ -19,9 +19,11 @@ public:
 	unordered_map<int,int> pesudoCost;
 
 	void updatePesudoCost(){
+		/*
 		for(auto& pc:pesudoCost){
 			pesudoCost[pc.first] = 0;
 		}
+		*/
 		for(auto pesudo_source_out:G.V.at(-1).EdgesOut){
 			if(G.E.at(pesudo_source_out).x > 0){//has some flow
 			    pesudoCost[G.E.at(pesudo_source_out).to] = G.ServerCost / G.E.at(pesudo_source_out).x;
@@ -29,7 +31,7 @@ public:
 		}
 	}
 
-	bool optimize();
+	bool optimize(bool patrial = false);
 
 	/*
 	STEP1:如果网络中不含有任何盈余节点和亏空节点，则已经得到最优解；否则在残量网络中选择一个盈余节点s，令S={s}，继续下一步
@@ -56,6 +58,9 @@ public:
 	int r_pi(unordered_set<Edge*>& R_ij);
 	int C_ij_pi(int i,int j,Edge* edge);
 	vector<Edge*> dijkstra(int source,int dest);
+
+	void dijkstraPrepare();
+	void _dijkstraPrepare(int source);
 
 	void refresh(){
 		G = OriginalGraph;

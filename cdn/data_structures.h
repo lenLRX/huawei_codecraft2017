@@ -28,12 +28,13 @@ public:
 	unordered_set<int> EdgesOut;
 	unordered_set<int> EdgesIn;
 	int distance;
+	int weight;
 	Edge* from_edge;
 
     Vertex(int id):id(id),
-	pi(0),d(0),consumer_id(-1),distance(-1),from_edge(nullptr){}
+	pi(0),d(0),consumer_id(-1),distance(-1),weight(0),from_edge(nullptr){}
 	Vertex():id(0),
-	pi(0),d(0),consumer_id(-1),distance(-1),from_edge(nullptr){}
+	pi(0),d(0),consumer_id(-1),distance(-1),weight(0),from_edge(nullptr){}
 };
 
 class Consumer
