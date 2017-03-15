@@ -4,13 +4,22 @@
 #include "data_structures.h"
 #include "parse.h"
 #include "LagrangianRelaxation.h"
+#include "Firefly.h"
 #include <random>
 #include <algorithm>
 
 void testLR();
 
+void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
+	Graph G = parse(topo,line_num);
+	LR optimizer(G);
+
+	FireflySolver solver(optimizer,1000,0.01,1,G.V.size());
+	solver.optimize();
+}
+
 //你要完成的功能总入口
-void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
+void deprecated_deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
 {
 	
 	Graph G = parse(topo,line_num);
@@ -21,8 +30,7 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
 	Graph minGraph;
 	int minCost = numeric_limits<int>::max();
 
-	auto start_time = chrono::high_resolution_clock::now();
-
+	auto start_time = chrono::high_resolution_clock::now();\\
 	default_random_engine generator;
 
 	vector<int> ids(optimizer.OriginalGraph.V.size());
