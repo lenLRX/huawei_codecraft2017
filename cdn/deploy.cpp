@@ -14,7 +14,7 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	Graph G = parse(topo,line_num);
 	LR optimizer(G);
 
-	FireflySolver solver(optimizer,200,0.001,1,G.V.size());
+	FireflySolver solver(optimizer,20,0.001,1,G.V.size());
 	solver.optimize();
 	write_result(solver.result.c_str(), filename);
 }

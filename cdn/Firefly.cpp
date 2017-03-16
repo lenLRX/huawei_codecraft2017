@@ -74,8 +74,17 @@ void FireflySolver::Beta_step(Firefly& fly1,Firefly& fly2){
 }
 
 void FireflySolver::Alpha_step(Firefly& fly){
-	int rand_position = _random_cell_distribution(generator);
-	fly.newbits[rand_position] = !fly.newbits[rand_position];
+	if(fly.objective == numeric_limits<int>::max()){
+		//the fly is invalid open a new facility
+		int rand_position = _random_cell_distribution(generator);
+	    fly.newbits[rand_position] = 1;
+	}
+	else{
+		//the fly is valid close a facility
+		int rand_position = _random_cell_distribution(generator);
+	    fly.newbits[rand_position] = 0;
+	}
+	
 }
 
 void FireflySolver::optimize(){
