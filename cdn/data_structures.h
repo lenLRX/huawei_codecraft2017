@@ -165,12 +165,13 @@ public:
 				flow -= next_flow;//减去被分流的部
 				edge.visited += next_flow;
 				auto& next_node = V.at(edge.to);
-				path.push_back(next_node.id);
+				auto _path_copy = path;
+				_path_copy.push_back(next_node.id);
 				
 #ifdef LEN_DBG
 				cout << " next node: " << next_node.id << " next_flow " << next_flow << endl;
 #endif
-				start_from_source(result,path,&next_node,next_flow);
+				start_from_source(result,_path_copy,&next_node,next_flow);
 			}
 		}
 	}
@@ -239,5 +240,4 @@ public:
 private:
     int i_counter;
 };
-
 #endif//__DATA_STRUCTURE_H__
