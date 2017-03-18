@@ -84,7 +84,38 @@ void FireflySolver::Alpha_step(Firefly& fly){
 		int rand_position = _random_cell_distribution(generator);
 	    fly.newbits[rand_position] = 0;
 	}
+}
+
+//亮的萤火虫，向暗的反方向随机移动一位
+void FireflySolver::Alpha2_step(Firefly& fly_dull,Firefly& fly){
+		//the fly is invalid open a new facility
+		int rand_position = _random_cell_distribution(generator);
+	    if(fly.newbits[rand_position]==fly_dull.newbits[rand_position])
+			fly.newbits[rand_position]=!fly.newbits[rand_position];
+}
+
+//获取最k近的萤火虫
+int FireflySolver::Get_Closer(vector<Firefly> Fireflies,int site,int k){
+	if(k>site)
+		k=site;
+	priority_queue<MyDistance> Kmin;
 	
+	for(size_t i=0;i < site;i++){
+		int r_ij = 0;
+		for(size_t j = 0;j < NodeNum;j++){
+			if(Fireflies[site].bits[j] != Fireflies[i].bits[j])
+				r_ij++;
+		}
+		if(Kmin.size()<k){
+			Kmin.push(MyDistance(i,r_ij));
+		}else{
+			if(r_ij<Kmin.top().d_ij){
+				Kmin.pop();
+				Kmin.push(MyDistance(i,r_ij));
+			}
+		}
+	}
+	return Kmin.top().site;
 }
 
 void FireflySolver::optimize(){
@@ -102,12 +133,15 @@ void FireflySolver::optimize(){
 		{
 			return f1.objective < f2.objective;
 		});
+		
 		for(size_t i = 0;i < population;i++){
 			auto& fly = Fireflies[i];
 			fly.newbits = fly.bits;
 			if(i > 0){
 				//xj != null
-				Beta_step(fly,Fireflies[i - 1]);
+				int c_site = Get_Closer(Fireflies,i,1);
+				Beta_step(fly,Fireflies[c_site]);
+				Alpha2_step(fly,Fireflies[c_site]);
 				Alpha_step(fly);
 			}
 			else{

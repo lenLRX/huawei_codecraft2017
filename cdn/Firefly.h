@@ -4,6 +4,7 @@
 #include "LagrangianRelaxation.h"
 #include <random>
 #include <chrono>
+#include <queue>
 
 class Firefly
 {
@@ -12,6 +13,19 @@ public:
 	vector<bool> bits;
 	vector<bool> newbits;//更新后的基因放在这里，防止其他个体读取到新的基因
 	int objective = 0;
+};
+
+class MyDistance {
+public:
+	int site;
+	int d_ij;
+	MyDistance(int m_site, int m_dij) {
+		site = m_site;
+		d_ij = m_dij;
+	}
+	bool operator < (const MyDistance & a) const {
+		return d_ij < a.d_ij;
+	}
 };
 
 class FireflySolver
@@ -48,6 +62,10 @@ public:
 	void Beta_step(Firefly& fly1,Firefly& fly2);
 
 	void Alpha_step(Firefly& fly);
+	
+	void Alpha2_step(Firefly& fly_dull,Firefly& fly);
+	
+	int Get_Closer(vector<Firefly> Fireflies,int site,int k);
 
 	void optimize();
 
