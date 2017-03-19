@@ -53,9 +53,11 @@ void FireflySolver::CostOfFly(Firefly& fly){
 	    fly.objective = numeric_limits<int>::max();
 	
 	if(fly.objective < GlobalMin){
+		//lr.check();
 		GlobalMin = fly.objective;
 		cout << "new GlobalMin: " << GlobalMin << endl;
 		result = lr.G.to_String();
+		//cout << result << endl;
 	}
 }
 

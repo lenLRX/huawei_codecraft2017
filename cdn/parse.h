@@ -63,7 +63,10 @@ Graph parse(char* graph[MAX_EDGE_NUM], int line_num){
 		ss >> s;
 		int requirement = stoi(s);
 
-		G.add_Consumer(ConsumerID,fromID,requirement);
+		if(G.V.count(fromID) == 0)
+		    G.add_Vertex(fromID);
+
+		G.add_Consumer(ConsumerID,&G.V.at(fromID),requirement);
 	}
 
 	G.VertexCompletement();

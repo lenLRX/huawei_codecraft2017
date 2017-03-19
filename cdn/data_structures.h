@@ -25,8 +25,8 @@ public:
 	int pi;//
 	int d;//current resource
 	int consumer_id;
-	unordered_set<int> EdgesOut;
-	unordered_set<int> EdgesIn;
+	vector<Edge*> EdgesOut;
+	vector<Edge*> EdgesIn;
 	int distance;
 	int weight;
 	Edge* from_edge;
@@ -41,11 +41,11 @@ class Consumer
 {
 public:
     int id;
-	int fromVertex;
+	Vertex* fromVertex;
 	int requirement;
 	int remaining_requirement;
 
-    Consumer(const int id,const int fromVertex,const int requirement)
+    Consumer(const int id,Vertex* fromVertex,const int requirement)
 :id(id),fromVertex(fromVertex),requirement(requirement),
 remaining_requirement(requirement)
 	{}
@@ -57,8 +57,8 @@ class Edge
 {
 public:
     int id;
-    int from;
-	int to;
+    Vertex* from;
+	Vertex* to;
 	int bandwidth;
 	int cost;
 	int x;//流量
@@ -66,8 +66,8 @@ public:
 	int ResidualEdgeNo;
 
     Edge(int id,
-        int from,
-	    int to,
+        Vertex* from,
+	    Vertex* to,
 	    int bandwidth,
 	    int cost,
 		int ResidualEdgeNo = 0):
@@ -87,29 +87,31 @@ public:
 	    int to,
 	    int bandwidth,
 	    int cost){
-		E[id] = Edge(id,from,to,bandwidth,cost,-id);
-		E[-id] = Edge(-id,to,from,0,-cost);
+		auto& from_vertex = GetVertex(from);
+		auto& to_vertex = GetVertex(to);
+		E[id] = Edge(id,&from_vertex,&to_vertex,bandwidth,cost,-id);
+		E[-id] = Edge(-id,&to_vertex,&from_vertex,0,-cost);
 	}
 
 	void add_Vertex(int id){
 		V[id] = Vertex(id);
 	}
 
-	void add_Consumer(const int id,const int fromVertex,const int requirement){
+	void add_Consumer(const int id,Vertex* fromVertex,const int requirement){
 		C[id] = Consumer(id,fromVertex,requirement);
 	}
 
 	void VertexCompletement(){
 		for(auto& p:E){
-			auto& v_from = GetVertex(p.second.from);
-			v_from.EdgesOut.insert(p.first);
-			auto& v_to = GetVertex(p.second.to);
-			v_to.EdgesIn.insert(p.first);
+			auto& v_from = GetVertex(p.second.from->id);
+			v_from.EdgesOut.push_back(&p.second);
+			auto& v_to = GetVertex(p.second.to->id);
+			v_to.EdgesIn.push_back(&p.second);
 		}
 
 		for(auto& cp:C){
-			GetVertex(cp.second.fromVertex).d = - cp.second.requirement;
-			GetVertex(cp.second.fromVertex).consumer_id = cp.second.id;
+			GetVertex(cp.second.fromVertex->id).d = - cp.second.requirement;
+			GetVertex(cp.second.fromVertex->id).consumer_id = cp.second.id;
 		}
 	}
 
@@ -152,7 +154,7 @@ public:
 #endif
 			if(flow <= 0)
 		        return;
-			auto& edge = E.at(e);
+			auto& edge = *e;
 			if(edge.x > 0 && edge.visited < edge.x){//还有空余带宽
 #ifdef LEN_DBG
 			    cout << "x " << edge.x << " visited " << edge.visited << endl;
@@ -164,7 +166,7 @@ public:
 				    next_flow = flow;
 				flow -= next_flow;//减去被分流的部
 				edge.visited += next_flow;
-				auto& next_node = V.at(edge.to);
+				auto& next_node = V.at(edge.to->id);
 				auto _path_copy = path;
 				_path_copy.push_back(next_node.id);
 				
@@ -184,8 +186,8 @@ public:
 			}
 		}
 
-		for(int out_from:V[-1].EdgesOut){
-			if(E[out_from].x > 0)
+		for(auto out_from:V[-1].EdgesOut){
+			if(out_from->x > 0)
 			    sum += ServerCost;
 		}
 		return sum;
@@ -193,10 +195,13 @@ public:
 
 	string to_String(){
 		vector<list<int>> result;
-		unordered_map<int,int> real_source;
+		map<int,int> real_source;
 		for(auto pesudo_source_out:V.at(-1).EdgesOut){
-			if(E.at(pesudo_source_out).x > 0){//has some flow
-			    real_source[E.at(pesudo_source_out).to] = E.at(pesudo_source_out).x;
+			if(pesudo_source_out->x > 0){//has some flow
+			    real_source[pesudo_source_out->to->id] = pesudo_source_out->x;
+#ifdef LEN_DBG
+				cout << "pesudo_source_out => " << pesudo_source_out->to->id << "  " << pesudo_source_out->x << endl;
+#endif
 			}
 		}
 

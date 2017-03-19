@@ -3,19 +3,20 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 using namespace std;
 
 #include "data_structures.h"
 
 class LagrangianRelaxation{
 public:
-    LagrangianRelaxation(Graph G):OriginalGraph(G){
+    LagrangianRelaxation(Graph& G):G(G){
 		for(auto& vp:G.V){
 			pesudoCost[vp.first] = 0;
 		}
 	}
-    Graph G;
-	Graph OriginalGraph;
+    Graph& G;
+	//Graph OriginalGraph;
 	unordered_map<int,int> pesudoCost;
 
 	void updatePesudoCost(){
@@ -25,8 +26,8 @@ public:
 		}
 		*/
 		for(auto pesudo_source_out:G.V.at(-1).EdgesOut){
-			if(G.E.at(pesudo_source_out).x > 0){//has some flow
-			    pesudoCost[G.E.at(pesudo_source_out).to] = G.ServerCost / G.E.at(pesudo_source_out).x;
+			if(pesudo_source_out->x > 0){//has some flow
+			    pesudoCost[pesudo_source_out->to->id] = G.ServerCost / pesudo_source_out->x;
 			}
 		}
 	}
@@ -53,17 +54,64 @@ public:
 	*/
 	//void step4();
 
-	int e(unordered_set<Vertex*>& S);
-	unordered_set<Edge*> get_rij(unordered_set<Vertex*>& S); 
-	int r_pi(unordered_set<Edge*>& R_ij);
-	int C_ij_pi(int i,int j,Edge* edge);
-	vector<Edge*> dijkstra(int source,int dest);
+	int e(set<Vertex*>& S);
+	vector<Edge*> get_rij(set<Vertex*>& S); 
+	int r_pi(vector<Edge*>& R_ij);
+	int C_ij_pi(Vertex* i,Vertex* j,Edge* edge);
+	vector<Edge*> dijkstra(Vertex* source,Vertex* dest);
 
 	void dijkstraPrepare();
 	void _dijkstraPrepare(int source);
 
 	void refresh(){
-		G = OriginalGraph;
+		//G = OriginalGraph;
+		vector<int> EdgesToErase;
+
+		for(auto& ep:G.E){
+			if(ep.second.from->id == -1){
+				EdgesToErase.push_back(ep.first);
+			}
+			else{
+				ep.second.x = 0;
+				ep.second.visited = 0;
+				if(ep.second.id < 0){
+					ep.second.bandwidth = 0;
+				}
+			}
+		}
+
+		for(auto& vp:G.V){
+			for(auto it = vp.second.EdgesIn.begin(); it != vp.second.EdgesIn.end();){
+				if((*it)->from->id == -1){
+					it = vp.second.EdgesIn.erase(it);
+				}
+				else
+				    it++;
+			}
+
+			for(auto it = vp.second.EdgesOut.begin(); it != vp.second.EdgesOut.end();){
+				if((*it)->to->id == -1){
+					it = vp.second.EdgesOut.erase(it);
+				}
+				else
+				    it++;
+			}
+			vp.second.pi = 0;
+			vp.second.d = 0;
+			if(vp.second.consumer_id >= 0){
+				vp.second.d = - G.C.at(vp.second.consumer_id).requirement;
+			}
+		}
+
+		G.V.erase(-1);
+
+		for(int k:EdgesToErase){
+			G.E.erase(k);
+		}
+
+		for(auto& cp:G.C){
+			cp.second.remaining_requirement = cp.second.requirement;
+		}
 	}
 
 	void create_pesudo_source(unordered_set<int> ExcludingVertex = unordered_set<int>());

@@ -32,7 +32,7 @@ public:
 class FireflySolver
 {
 public:
-    FireflySolver(const LR& lr,const int population,
+    FireflySolver(LR& lr,const int population,
 	    const float Gamma,const float Alpha,const size_t NodeNum):lr(lr),
 		population(population),Gamma(Gamma),Alpha(Alpha),NodeNum(NodeNum),
 		_0_1_distribution(uniform_int_distribution<int>(0,1)),
@@ -49,8 +49,8 @@ public:
 				Fireflies[0].bits[i] = 0;
 			}
 
-			for(const auto& cp:lr.OriginalGraph.C){
-				Fireflies[0].bits[cp.second.fromVertex] = 1;
+			for(const auto& cp:lr.G.C){
+				Fireflies[0].bits[cp.second.fromVertex->id] = 1;
 			}
 		}
 	
@@ -70,8 +70,8 @@ public:
 
 	void optimize();
 
-	LR lr;
-
+	LR& lr;
+	
 	const int population;
 	const float Gamma;
 	const float Alpha;

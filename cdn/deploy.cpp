@@ -21,6 +21,9 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 }
 
 //你要完成的功能总入口
+
+
+#ifdef USE_LEGACY
 void deprecated_deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename)
 {
 	
@@ -218,3 +221,4 @@ void testLR(){
 		cout << e.second.from << " => " << e.second.to << " x: " << e.second.x << endl;
 	}
 }
+#endif
