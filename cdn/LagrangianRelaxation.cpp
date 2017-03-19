@@ -144,6 +144,8 @@ bool LagrangianRelaxation::optimize(bool patrial){
 #ifdef LEN_DBG
 			cout << "G.V[-1] " << G.V[-1].d << endl;
 #endif
+            if(minvec.size() == 0)
+			    return false;
 			a = *min_element(minvec.begin(),minvec.end());
 			for(auto s:S){
 				s->pi += a;

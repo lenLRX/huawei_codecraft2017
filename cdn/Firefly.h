@@ -5,6 +5,7 @@
 #include <random>
 #include <chrono>
 #include <queue>
+#include <set>
 
 class Firefly
 {
@@ -83,6 +84,8 @@ public:
 	string result;
 
 	vector<Firefly> Fireflies;
+
+	set<vector<bool>> tabu;
 
 	default_random_engine generator;
 

@@ -17,10 +17,18 @@ void FireflySolver::UpdateObjectiveAndBestFly(){
 	Fmin = numeric_limits<int>::max();
 	for(int i = 0;i < population;i++){
 		auto time_now = chrono::high_resolution_clock::now();
-		if(chrono::duration_cast<chrono::seconds>(time_now - start_time).count() > 80)
+		if(chrono::duration_cast<chrono::seconds>(time_now - start_time).count() > 87)
 			throw "timeout";
 		auto& fly = Fireflies[i];
-		CostOfFly(fly);
+		if(tabu.count(fly.bits)){
+			//fly.objective = numeric_limits<int>::max();
+			//continue;
+		}
+		else{
+			tabu.insert(fly.bits);
+			CostOfFly(fly);
+		}
+		
 		if(fly.objective < Fmin){
 		    Fmin = fly.objective;
 			Fminpos = i;
@@ -90,8 +98,8 @@ void FireflySolver::Alpha_step(Firefly& fly){
 void FireflySolver::Alpha2_step(Firefly& fly_dull,Firefly& fly){
 		//the fly is invalid open a new facility
 		int rand_position = _random_cell_distribution(generator);
-	    if(fly.newbits[rand_position]==fly_dull.newbits[rand_position])
-			fly.newbits[rand_position]=!fly.newbits[rand_position];
+	    if(fly.newbits[rand_position]==fly_dull.bits[rand_position])
+			fly.newbits[rand_position]=!fly.bits[rand_position];
 }
 
 //获取最k近的萤火虫
@@ -143,6 +151,7 @@ void FireflySolver::optimize(){
 				Beta_step(fly,Fireflies[c_site]);
 				Alpha2_step(fly,Fireflies[c_site]);
 				Alpha_step(fly);
+				//Beta_step(fly,Fireflies[i - 1]);
 			}
 			else{
 				//skip

@@ -16,6 +16,7 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 
 	FireflySolver solver(optimizer,20,0.001,1,G.V.size());
 	solver.optimize();
+	cout << "visited size " << solver.tabu.size() << endl;
 	write_result(solver.result.c_str(), filename);
 }
 
