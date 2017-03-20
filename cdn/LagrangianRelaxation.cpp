@@ -278,10 +278,12 @@ int LagrangianRelaxation::e(set<Vertex*>& S){
 }
 
 vector<Edge*> LagrangianRelaxation::get_rij(set<Vertex*>& S){
-	set<Vertex*> S_int_set;//S的id的编号的集合
+	//set<Vertex*> S_int_set;//S的id的编号的集合
+	vector<int> S_int_set(G.V.size(),true);
 	vector<Edge*> R_ij;
 	for(auto s:S){
-		S_int_set.insert(s);
+		//S_int_set.insert(s);
+		S_int_set[s->id + 1] = false;// +1 for 1 offset for pesudo source
 	}
 
 #ifdef LEN_DBG
@@ -289,7 +291,8 @@ vector<Edge*> LagrangianRelaxation::get_rij(set<Vertex*>& S){
 #endif
 	for(auto s:S){
 		for(auto edge:s->EdgesOut){
-			if(S_int_set.count(edge->to) == 0){
+			//if(S_int_set.count(edge->to) == 0){
+			if(S_int_set[edge->to->id + 1]){
 				R_ij.push_back(edge);
 #ifdef LEN_DBG
 				cout << "id " << edge->id << " from " << edge->from->id 

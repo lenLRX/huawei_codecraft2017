@@ -52,10 +52,24 @@ void FireflySolver::CostOfFly(Firefly& fly){
 	else//invalid
 	    fly.objective = numeric_limits<int>::max();
 	
+	if(b){
+		for(auto out_from:lr.G.V[-1].EdgesOut){
+			if(out_from->x > 0)
+			    fly.bits[out_from->to->id] = true;
+			else
+			    fly.bits[out_from->to->id] = false;
+		}
+	}
+	
 	if(fly.objective < GlobalMin){
 		//lr.check();
+		minServerNum = 0;
+		for(auto b:fly.bits){
+			if(b)
+			    minServerNum++;
+		}
 		GlobalMin = fly.objective;
-		cout << "new GlobalMin: " << GlobalMin << endl;
+		cout << "new GlobalMin: " << GlobalMin << " ServerNum " << minServerNum << endl;
 		result = lr.G.to_String();
 		//cout << result << endl;
 	}
@@ -89,10 +103,83 @@ void FireflySolver::Alpha_step(Firefly& fly){
 		int rand_position = _random_cell_distribution(generator);
 	    fly.newbits[rand_position] = 1;
 	}
+	else if(false && fly.count() > minServerNum){
+
+		while(fly.count() > minServerNum){
+			//too many facility close one
+			int delta = fly.count() - minServerNum;
+
+			uniform_int_distribution<int> d(0,delta - 1);
+
+			int todelete = d(generator);
+
+			//cout << delta << "todelete " << todelete << endl;
+
+			size_t bits_size = fly.newbits.size();
+			int c = 0;
+			for(size_t i = 0;i < bits_size;i++){
+				if(fly.newbits[i]){
+					if(c == todelete){
+						//cout << "delete" << endl;
+						fly.newbits[i] = false;
+						break;
+					}
+					c++;
+				}
+					
+			}
+		}
+			
+	}
 	else{
-		//the fly is valid close a facility
-		int rand_position = _random_cell_distribution(generator);
-	    fly.newbits[rand_position] = 0;
+		//the fly is valid close a facility 
+		float rand_num = _0_1_distribution(generator);
+		if(rand_num < 0.1){
+			int rand_position = _random_cell_distribution(generator);
+	        fly.newbits[rand_position] = 0;
+		}
+		else if(rand_num < 0.2){
+            int rand_position = _random_cell_distribution(generator);
+	        fly.newbits[rand_position] = 1;
+		}
+		//or swap a bit
+		else{
+			int count = fly.count();
+			uniform_int_distribution<int> d(0,count - 1);
+
+			int to_swap = d(generator);
+
+			int pos1 = -1;
+
+			size_t bits_size = fly.newbits.size();
+			int c = 0;
+			for(size_t i = 0;i < bits_size;i++){
+				if(fly.newbits[i]){
+					if(c == to_swap){
+						pos1 = i;
+						break;
+					}
+					c++;
+				}	
+			}
+
+			c = 0;
+			uniform_int_distribution<int> d2(0,NodeNum - count - 1);
+			int to_swap2 = d2(generator);
+
+			int pos2 = -1;
+			for(size_t i = 0;i < bits_size;i++){
+				if(fly.newbits[i]){
+					if(c == to_swap){
+						pos2 = i;
+						break;
+					}
+					c++;
+				}	
+			}
+
+			swap(fly.newbits[pos1],fly.newbits[pos2]);
+		}
 	}
 }
 

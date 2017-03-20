@@ -11,9 +11,19 @@ class Firefly
 {
 public:
     void resize(int n);
-	vector<bool> bits;
-	vector<bool> newbits;//更新后的基因放在这里，防止其他个体读取到新的基因
+	vector<int> bits;
+	vector<int> newbits;//更新后的基因放在这里，防止其他个体读取到新的基因
 	int objective = 0;
+
+	int count(){
+		size_t bits_size = newbits.size();
+		int c = 0;
+		for(size_t i = 0;i < bits_size;i++){
+			if(newbits[i])
+			    c++;
+		}
+		return c;
+	}
 };
 
 class MyDistance {
@@ -77,6 +87,8 @@ public:
 	const float Alpha;
 	const size_t NodeNum;
 
+	int minServerNum;
+
 	int Fmin;
 	int Fminpos;
 	int GlobalMin;
@@ -85,7 +97,7 @@ public:
 
 	vector<Firefly> Fireflies;
 
-	set<vector<bool>> tabu;
+	set<vector<int>> tabu;
 
 	default_random_engine generator;
 
