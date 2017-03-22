@@ -134,11 +134,35 @@ void FireflySolver::Alpha_step(Firefly& fly){
 	else{
 		//the fly is valid close a facility 
 		float rand_num = _0_1_distribution(generator);
-		if(rand_num < 0.1){
+		if(rand_num < 0.0){
+			int empty_consumer_node_num = 0;
+			size_t bits_size = fly.newbits.size();
+			for(size_t i = 0;i < bits_size;i++){
+				if(consumer_map[i] && !fly.newbits[i]){
+					empty_consumer_node_num++;
+				}
+			}
+
+			int c_to_open = uniform_int_distribution<int>(0,
+			empty_consumer_node_num - 1)(generator);
+
+			int c = 0;
+
+			for(size_t i = 0;i < bits_size;i++){
+				if(consumer_map[i] && !fly.newbits[i]){
+					if(c == c_to_open){
+						fly.newbits[i] = true;
+						break;
+					}
+					c++;
+				}
+			}
+		}
+		else if(rand_num < 0.05){
 			int rand_position = _random_cell_distribution(generator);
 	        fly.newbits[rand_position] = 0;
 		}
-		else if(rand_num < 0.2){
+		else if(rand_num < 0.1){
             int rand_position = _random_cell_distribution(generator);
 	        fly.newbits[rand_position] = 1;
 		}
@@ -163,20 +187,50 @@ void FireflySolver::Alpha_step(Firefly& fly){
 				}	
 			}
 
-			c = 0;
-			uniform_int_distribution<int> d2(0,NodeNum - count - 1);
-			int to_swap2 = d2(generator);
-
+            c = 0;
 			int pos2 = -1;
+
+			int empty_consumer_node_num = 0;
 			for(size_t i = 0;i < bits_size;i++){
-				if(fly.newbits[i]){
-					if(c == to_swap){
-						pos2 = i;
-						break;
-					}
-					c++;
-				}	
+				if(consumer_map[i] && !fly.newbits[i]){
+					empty_consumer_node_num++;
+				}
 			}
+
+			if(empty_consumer_node_num <= 0){
+				uniform_int_distribution<int> d2(0,NodeNum - count - 1);
+				int to_swap2 = d2(generator);
+				for(size_t i = 0;i < bits_size;i++){
+					if(fly.newbits[i]){
+						if(c == to_swap){
+							pos2 = i;
+							break;
+						}
+						c++;
+					}	
+				}
+
+			}else{
+				int c_to_open = uniform_int_distribution<int>(0,
+				empty_consumer_node_num - 1)(generator);
+
+				for(size_t i = 0;i < bits_size;i++){
+					if(consumer_map[i] && !fly.newbits[i]){
+						if(c == c_to_open){
+							pos2 = i;
+							break;
+						}
+						c++;
+					}
+				}
+
+				//cout << pos2 << endl;
+
+			}
+
+			
+			if(pos2 < 0)
+			    cout << "error " << pos2 << " " << empty_consumer_node_num << endl;
 
 			swap(fly.newbits[pos1],fly.newbits[pos2]);
 		}
@@ -238,7 +292,7 @@ void FireflySolver::optimize(){
 				//xj != null
 				int c_site = Get_Closer(Fireflies,i,1);
 				Beta_step(fly,Fireflies[c_site]);
-				Alpha2_step(fly,Fireflies[c_site]);
+				//Alpha2_step(fly,Fireflies[c_site]);
 				Alpha_step(fly);
 				//Beta_step(fly,Fireflies[i - 1]);
 			}

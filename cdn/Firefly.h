@@ -49,6 +49,11 @@ public:
 		_random_cell_distribution(uniform_int_distribution<int>(0,NodeNum - 1)),
 		GlobalMin(numeric_limits<int>::max()),
 		_float_distribution(uniform_real_distribution<float>(0,1)){
+			consumer_map = vector<int>(NodeNum,false);
+			for(auto cp:lr.G.C){
+				consumer_map[cp.second.fromVertex->id] = true;
+				cout << cp.second.fromVertex->id << endl;
+			}
 			Fireflies.resize(population);
 			for(auto& fly:Fireflies){
 				fly.resize(NodeNum);
@@ -98,6 +103,8 @@ public:
 	vector<Firefly> Fireflies;
 
 	set<vector<int>> tabu;
+
+	vector<int> consumer_map;
 
 	default_random_engine generator;
 
