@@ -4,6 +4,7 @@
 #include "data_structures.h"
 #include "parse.h"
 #include "LagrangianRelaxation.h"
+#include "SSPA.h"
 #include "Firefly.h"
 #include <random>
 #include <algorithm>
@@ -12,7 +13,8 @@ void testLR();
 
 void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	Graph G = parse(topo,line_num);
-	LR optimizer(G);
+	//LR optimizer(G);
+	SSPA optimizer(G);
 
 	FireflySolver solver(optimizer,20,0.001,1,G.V.size());
 	solver.optimize();

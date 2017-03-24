@@ -11,7 +11,8 @@
 
 //#define LEN_DBG
 
-bool LagrangianRelaxation::optimize(bool patrial){
+bool LagrangianRelaxation::optimize(){
+	counter++;
 	set<Vertex*> excess_set;
 	set<Vertex*> deficit_set;
 	set<Vertex*> S;
@@ -344,66 +345,6 @@ int LagrangianRelaxation::C_ij_pi(Vertex* i,Vertex* j,Edge* edge){
 	//    return pi_j - pi_i - c_ij;
 }
 
-void LagrangianRelaxation::create_pesudo_source(unordered_set<int> ExcludingVertex){
-	int pesudo_source_id = -1;
-	Vertex pesudo_source(pesudo_source_id);
-
-	G.V[pesudo_source_id] = pesudo_source;
-
-	auto p_pesudo_source = &G.V[pesudo_source_id];
-
-	int sum = 0;
-
-	for(auto& pv:G.V){
-		if(pv.first == -1)
-		    continue;
-		sum += pv.second.d;
-		//cout << pv.first << " : " << pv.second.d << endl;
-		if(ExcludingVertex.count(pv.first) == 0)
-		    continue;
-		//cout << pv.first << endl;
-		Edge e;
-		e.id = G.GetAnID();
-		e.from = p_pesudo_source;
-		e.to = &pv.second;
-		e.bandwidth = numeric_limits<int>::max();
-		e.cost = pesudoCost.at(pv.first);
-		//e.cost = 0;
-		//e.cost = G.ServerCost;
-		e.x = 0;
-
-		//cout << pv.first << " : " << e.cost << endl;
-
-		Edge ResidualEdge;
-		ResidualEdge.id = -e.id;
-		ResidualEdge.from = e.to;
-		ResidualEdge.to = e.from;
-		ResidualEdge.bandwidth = e.bandwidth;
-		ResidualEdge.cost = -e.cost;
-		ResidualEdge.x = 0;
-		e.ResidualEdgeNo = -e.id;
-
-		G.E[e.id] = e;
-		auto p_e = &G.E[e.id];
-		G.E[-e.id] = ResidualEdge;
-		auto p_ResidualEdge = &G.E[-e.id];
-		pv.second.EdgesIn.push_back(p_e);
-		pv.second.EdgesOut.push_back(p_ResidualEdge);
-		p_pesudo_source->EdgesOut.push_back(p_e);
-		p_pesudo_source->EdgesIn.push_back(p_ResidualEdge);
-
-		//cout << "e.id " << e.id << endl;
-
-		
-	}
-
-	p_pesudo_source->d = -sum;
-
-	//cout << "pesudo_source.d " << pesudo_source.d << endl;
-
-	
-}
-
 void LagrangianRelaxation::rand_a_source(){
 	int sum = 0;
 	for(auto& pv:G.V){
@@ -428,28 +369,6 @@ void LagrangianRelaxation::rand_a_source(){
 	}
 
 	//G.V.begin()->second.d = -sum;
-}
-
-void LagrangianRelaxation::check(){
-	for(auto& vp:G.V){
-		int sum = 0;
-		for(auto edge_no:vp.second.EdgesIn){
-			if(edge_no->id > 0)
-			    sum += edge_no->x;
-		}
-
-		for(auto edge_no:vp.second.EdgesOut){
-			if(edge_no->id > 0)
-			    sum -= edge_no->x;
-		}
-
-		if(sum != 0){
-			cout << "ID : " << vp.first << " Vertex sum " << sum << endl;
-		}
-
-		if(vp.second.d !=0 )
-		    cout << "d: " << vp.second.d << endl;
-	}
 }
 
 vector<Edge*> LagrangianRelaxation::dijkstra(Vertex* source,Vertex* dest){

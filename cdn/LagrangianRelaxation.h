@@ -6,16 +6,15 @@
 #include <set>
 using namespace std;
 
+#include "optimizer.h"
+
 #include "data_structures.h"
 
-class LagrangianRelaxation{
+class LagrangianRelaxation:public Optimizer{
 public:
-    LagrangianRelaxation(Graph& G):G(G){
-		for(auto& vp:G.V){
-			pesudoCost[vp.first] = 0;
-		}
+    LagrangianRelaxation(Graph& G):Optimizer(G){
+
 	}
-    Graph& G;
 	//Graph OriginalGraph;
 	unordered_map<int,int> pesudoCost;
 
@@ -32,7 +31,7 @@ public:
 		}
 	}
 
-	bool optimize(bool patrial = false);
+	virtual bool optimize();
 
 	/*
 	STEP1:如果网络中不含有任何盈余节点和亏空节点，则已经得到最优解；否则在残量网络中选择一个盈余节点s，令S={s}，继续下一步
@@ -63,60 +62,9 @@ public:
 	void dijkstraPrepare();
 	void _dijkstraPrepare(int source);
 
-	void refresh(){
-		//G = OriginalGraph;
-		vector<int> EdgesToErase;
-
-		for(auto& ep:G.E){
-			if(ep.second.from->id == -1){
-				EdgesToErase.push_back(ep.first);
-			}
-			else{
-				ep.second.x = 0;
-				ep.second.visited = 0;
-				if(ep.second.id < 0){
-					ep.second.bandwidth = 0;
-				}
-			}
-		}
-
-		for(auto& vp:G.V){
-			for(auto it = vp.second.EdgesIn.begin(); it != vp.second.EdgesIn.end();){
-				if((*it)->from->id == -1){
-					it = vp.second.EdgesIn.erase(it);
-				}
-				else
-				    it++;
-			}
-
-			for(auto it = vp.second.EdgesOut.begin(); it != vp.second.EdgesOut.end();){
-				if((*it)->to->id == -1){
-					it = vp.second.EdgesOut.erase(it);
-				}
-				else
-				    it++;
-			}
-			vp.second.pi = 0;
-			vp.second.d = 0;
-			if(vp.second.consumer_id >= 0){
-				vp.second.d = - G.C.at(vp.second.consumer_id).requirement;
-			}
-		}
-
-		G.V.erase(-1);
-
-		for(int k:EdgesToErase){
-			G.E.erase(k);
-		}
-
-		for(auto& cp:G.C){
-			cp.second.remaining_requirement = cp.second.requirement;
-		}
-	}
-
-	void create_pesudo_source(unordered_set<int> ExcludingVertex = unordered_set<int>());
 	void rand_a_source();
-	void check();
+
+	int counter = 0;
 };
 
 typedef LagrangianRelaxation LR;

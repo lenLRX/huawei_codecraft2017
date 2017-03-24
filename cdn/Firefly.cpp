@@ -20,8 +20,8 @@ void FireflySolver::UpdateObjectiveAndBestFly(){
 		if(chrono::duration_cast<chrono::seconds>(time_now - start_time).count() > 87)
 			throw "timeout";
 		auto& fly = Fireflies[i];
-		if(tabu.count(fly.bits)){
-			//fly.objective = numeric_limits<int>::max();
+		if(tabu.count(fly.bits) && i > 0){
+			fly.objective = numeric_limits<int>::max();
 			//continue;
 		}
 		else{
@@ -102,8 +102,9 @@ void FireflySolver::Alpha_step(Firefly& fly){
 		//the fly is invalid open a new facility
 		int rand_position = _random_cell_distribution(generator);
 	    fly.newbits[rand_position] = 1;
+		return;
 	}
-	else if(false && fly.count() > minServerNum){
+	if(fly.count() > minServerNum){
 
 		while(fly.count() > minServerNum){
 			//too many facility close one
@@ -131,7 +132,7 @@ void FireflySolver::Alpha_step(Firefly& fly){
 		}
 			
 	}
-	else{
+	{
 		//the fly is valid close a facility 
 		float rand_num = _0_1_distribution(generator);
 		if(rand_num < 0.0){
@@ -169,6 +170,7 @@ void FireflySolver::Alpha_step(Firefly& fly){
 		//or swap a bit
 		else{
 			int count = fly.count();
+			//cout << "count : " << count << endl;
 			uniform_int_distribution<int> d(0,count - 1);
 
 			int to_swap = d(generator);
@@ -201,8 +203,8 @@ void FireflySolver::Alpha_step(Firefly& fly){
 				uniform_int_distribution<int> d2(0,NodeNum - count - 1);
 				int to_swap2 = d2(generator);
 				for(size_t i = 0;i < bits_size;i++){
-					if(fly.newbits[i]){
-						if(c == to_swap){
+					if(!fly.newbits[i]){
+						if(c == to_swap2){
 							pos2 = i;
 							break;
 						}
@@ -224,10 +226,12 @@ void FireflySolver::Alpha_step(Firefly& fly){
 					}
 				}
 
-				//cout << pos2 << endl;
+				//cout << "swap: " << pos1 << " " << pos2 << " to_swap " << to_swap << endl;
 
 			}
 
+            if(pos1 < 0)
+			    cout << "error! " << pos1 << " to_swap: " << to_swap << " count " << count << endl;
 			
 			if(pos2 < 0)
 			    cout << "error " << pos2 << " " << empty_consumer_node_num << endl;
@@ -288,19 +292,32 @@ void FireflySolver::optimize(){
 		for(size_t i = 0;i < population;i++){
 			auto& fly = Fireflies[i];
 			fly.newbits = fly.bits;
-			if(i > 0){
+			if(i > Fireflies.size()/2){
 				//xj != null
-				int c_site = Get_Closer(Fireflies,i,1);
-				Beta_step(fly,Fireflies[c_site]);
+				//int c_site = Get_Closer(Fireflies,i,1);
+				//Beta_step(fly,Fireflies[c_site]);
 				//Alpha2_step(fly,Fireflies[c_site]);
-				Alpha_step(fly);
-				//Beta_step(fly,Fireflies[i - 1]);
+				Beta_step(fly,Fireflies[i - 1]);
+				
+				//Alpha_step(fly);
 			}
-			else{
+			else if(i > 0){
+				fly = Fireflies[0];
 				//skip
 				Alpha_step(fly);
 			}
 		}
+
+        /*
+		size_t bits_size = Fireflies[0].newbits.size();
+		for(size_t i = 0;i < bits_size;i++){
+			if(Fireflies[0].newbits[i]){
+				cout << i << " ";
+			}
+		}
+
+		cout << " objective " << Fireflies[0].objective << endl;
+		*/
 
         //update
 		for(size_t i = 0;i < population;i++){
