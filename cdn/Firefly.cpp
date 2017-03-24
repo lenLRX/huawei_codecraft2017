@@ -26,7 +26,7 @@ void FireflySolver::UpdateObjectiveAndBestFly(){
 		}
 		else{
 			tabu.insert(fly.bits);
-			CostOfFly(fly);
+			CostOfFly(fly,i);
 		}
 		
 		if(fly.objective < Fmin){
@@ -36,7 +36,7 @@ void FireflySolver::UpdateObjectiveAndBestFly(){
 	}
 }
 
-void FireflySolver::CostOfFly(Firefly& fly){
+void FireflySolver::CostOfFly(Firefly& fly,int i){
 	
 	lr.refresh();
 	unordered_set<int> includeing_set;
@@ -69,7 +69,10 @@ void FireflySolver::CostOfFly(Firefly& fly){
 			    minServerNum++;
 		}
 		GlobalMin = fly.objective;
-		cout << "new GlobalMin: " << GlobalMin << " ServerNum " << minServerNum << endl;
+		cout << "new GlobalMin: " 
+		     << GlobalMin << " ServerNum " 
+			 << minServerNum << " position: "
+			 << i << endl;
 		result = lr.G.to_String();
 		//cout << result << endl;
 	}
@@ -292,7 +295,7 @@ void FireflySolver::optimize(){
 		for(size_t i = 0;i < population;i++){
 			auto& fly = Fireflies[i];
 			fly.newbits = fly.bits;
-			if(i > Fireflies.size()/2){
+			if(false && i > Fireflies.size()/2){
 				//xj != null
 				//int c_site = Get_Closer(Fireflies,i,1);
 				//Beta_step(fly,Fireflies[c_site]);

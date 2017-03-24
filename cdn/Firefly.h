@@ -71,7 +71,7 @@ public:
 	
 	void UpdateObjectiveAndBestFly();
 
-	void CostOfFly(Firefly& fly);
+	void CostOfFly(Firefly& fly,int i);
 
 	void Randomize(Firefly& fly);
 

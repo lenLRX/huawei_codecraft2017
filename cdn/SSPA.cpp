@@ -5,7 +5,6 @@
 bool SSPA::optimize(){
 	Vertex* pesudoSource = &G.V.at(-1);
 	vector<Vertex*> deficit_set;
-	vector<int> minvec;
 
 	for(auto& vp:G.V){
 		if(vp.second.d < 0)
@@ -15,36 +14,34 @@ bool SSPA::optimize(){
     while(true){
 		if(deficit_set.size() == 0)
 		    break;//done!
+		
+		int min_value = numeric_limits<int>::max();
 
-		minvec.clear();
 		Vertex* dest = nullptr;
 		vector<Edge*> path = dijkstra(pesudoSource,dest);
 		if(path.size() == 0)
 			return false;
-		minvec.push_back(pesudoSource->d);
-		minvec.push_back(-dest->d);
+		
+		min_value = min(min_value,pesudoSource->d);
+		min_value = min(min_value,-dest->d);
 
 		for(auto pE:path){
 			if(pE->id > 0)
-			    minvec.push_back(pE->bandwidth - pE->x);
+			    min_value = min(min_value,pE->bandwidth - pE->x);
 		    else
-			    minvec.push_back(pE->bandwidth);
+			    min_value = min(min_value,pE->bandwidth);
 		}
 
-		int a = *min_element(minvec.begin(),minvec.end());
-		pesudoSource->d -= a;
-		dest->d += a;
+		pesudoSource->d -= min_value;
+		dest->d += min_value;
 
 		for(auto r:path){
 			if(r->id > 0){
-				r->x += a;
+				r->x += min_value;
 			    G.E.at(-r->id).bandwidth = r->x;
-				if(r->from->id == -1){
-					r->cost = 0;
-				}
 			}
 			else{
-				G.E.at(-r->id).x -= a;
+				G.E.at(-r->id).x -= min_value;
 				r->bandwidth = G.E.at(-r->id).x;
 			}
 		}
@@ -78,7 +75,8 @@ vector<Edge*> SSPA::dijkstra(Vertex* source,Vertex*& dest){
 
 	size_t v_size = G.V.size();
 
-	set<Vertex*> excluding_set;
+	//set<Vertex*> excluding_set;
+	vector<int> excluding_set(G.V.size(),false);
 	
 	for(size_t i = 0;i < v_size - 1;i++){
 		int min_element_pos = -1;
@@ -95,7 +93,7 @@ vector<Edge*> SSPA::dijkstra(Vertex* source,Vertex*& dest){
 
 		swap(Q[i],Q[min_element_pos]);
 
-		excluding_set.insert(Q[i]);
+		excluding_set[Q[i]->id + 1] = true;
 
 		if(Q[i]->d < 0){
 			dest = Q[i];
@@ -108,7 +106,7 @@ vector<Edge*> SSPA::dijkstra(Vertex* source,Vertex*& dest){
 		int my_distance = v->distance;
 
 		for(auto e:v->EdgesOut){
-			if(excluding_set.count(e->to))
+			if(excluding_set[e->to->id + 1])
 			    continue;
 			Vertex* u = e->to;
 			if(e->bandwidth > 0 && e->bandwidth - e->x > 0 
