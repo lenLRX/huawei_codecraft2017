@@ -1,8 +1,9 @@
-#include "SSPA.h"
+#include "SPFA.h"
+#include <queue>
 #include <assert.h>
 #include <algorithm>
 
-bool SSPA::optimize(){
+bool SPFA::optimize(){
 	Vertex* pesudoSource = &G.V.at(-1);
 	vector<Vertex*> deficit_set;
 
@@ -18,7 +19,7 @@ bool SSPA::optimize(){
 		int min_value = numeric_limits<int>::max();
 
 		Vertex* dest = nullptr;
-		vector<Edge*> path = dijkstra(pesudoSource,dest);
+		vector<Edge*> path = spfa(pesudoSource,dest);
 		if(path.size() == 0)
 			return false;
 		
@@ -60,48 +61,32 @@ bool SSPA::optimize(){
 	return true;
 }
 
-vector<Edge*> SSPA::dijkstra(Vertex* source,Vertex*& dest){
+vector<Edge*> SPFA::spfa(Vertex* source,Vertex*& dest){
 	vector<Edge*> ret;
-	auto cmp = [this](int lhs,int rhs)->bool{
-		return this->G.V.at(lhs).distance < this->G.V.at(rhs).distance;
-	};
 
-	vector<Vertex*> Q;
+	queue<Vertex*> Q;
 	for(auto& v:G.V){
 		v.second.distance = numeric_limits<int>::max();
-		Q.push_back(&v.second);
 	}
 	source->distance = 0;
 
 	size_t v_size = G.V.size();
 
+	Q.push(source);
+
 	//set<Vertex*> excluding_set;
 	vector<int> excluding_set(G.V.size(),false);
-	
-	for(size_t i = 0;i < v_size - 1;i++){
-		int min_element_pos = -1;
-		int min_value = numeric_limits<int>::max();
-		for(size_t j = i;j < v_size;j++){
-			if(Q[j]->distance < min_value){
-				min_value = Q[j]->distance;
-				min_element_pos = j;
-			}
-		}
+	vector<int> count(G.V.size(),false);
+	/*
+	while(true){
+		if(Q.empty())
+		    break;
+		Vertex* now = Q.front();
+		Q.pop();
 
-		if(min_element_pos < 0)
-		    return vector<Edge*>();
+		excluding_set[now->id + 1] = true;
 
-		swap(Q[i],Q[min_element_pos]);
 
-		excluding_set[Q[i]->id + 1] = true;
-
-		if(Q[i]->d < 0){
-			dest = Q[i];
-			assert(dest != nullptr);
-			break;//early stop
-		}
-
-		Vertex* v = Q[i];
 
 		int my_distance = v->distance;
 
@@ -133,7 +118,6 @@ vector<Edge*> SSPA::dijkstra(Vertex* source,Vertex*& dest){
 		
 		if(visited_set.count(pVertex)){
 			ret.clear();
-			cout << "error" << endl;
 			break;
 		}
 		    
@@ -148,4 +132,5 @@ vector<Edge*> SSPA::dijkstra(Vertex* source,Vertex*& dest){
 	reverse(ret.begin(),ret.end());
 
 	return ret;
+	*/
 }

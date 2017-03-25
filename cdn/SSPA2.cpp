@@ -1,8 +1,8 @@
-#include "SSPA.h"
+#include "SSPA2.h"
 #include <assert.h>
 #include <algorithm>
 
-bool SSPA::optimize(){
+bool SSPA2::optimize(){
 	Vertex* pesudoSource = &G.V.at(-1);
 	vector<Vertex*> deficit_set;
 
@@ -15,37 +15,25 @@ bool SSPA::optimize(){
 		if(deficit_set.size() == 0)
 		    break;//done!
 		
-		int min_value = numeric_limits<int>::max();
-
-		Vertex* dest = nullptr;
-		vector<Edge*> path = dijkstra(pesudoSource,dest);
-		if(path.size() == 0)
-			return false;
 		
-		min_value = min(min_value,pesudoSource->d);
-		min_value = min(min_value,-dest->d);
 
-		for(auto pE:path){
-			if(pE->id > 0)
-			    min_value = min(min_value,pE->bandwidth - pE->x);
-		    else
-			    min_value = min(min_value,pE->bandwidth);
-		}
+		dijkstra(pesudoSource);
 
-		pesudoSource->d -= min_value;
-		dest->d += min_value;
+		sort(deficit_set.begin(),deficit_set.end(),
+		[](const Vertex* lhs,const Vertex* rhs)->bool{
+			return lhs->distance < rhs->distance;
+		});
 
-		for(auto r:path){
-			if(r->id > 0){
-				r->x += min_value;
-			    G.E.at(-r->id).bandwidth = r->x;
-			}
+		if(deficit_set[0]->distance == numeric_limits<int>::max())
+		    return false;//no solution
+
+		for(Vertex* dest:deficit_set){
+			if(dest->distance == numeric_limits<int>::max())
+			    break;
 			else{
-				G.E.at(-r->id).x -= min_value;
-				r->bandwidth = G.E.at(-r->id).x;
+				augment_flow(dest);
 			}
 		}
-
         
 		for(auto it = deficit_set.begin();it != deficit_set.end();){
 			if((*it)->d == 0){
@@ -60,11 +48,7 @@ bool SSPA::optimize(){
 	return true;
 }
 
-vector<Edge*> SSPA::dijkstra(Vertex* source,Vertex*& dest){
-	vector<Edge*> ret;
-	auto cmp = [this](int lhs,int rhs)->bool{
-		return this->G.V.at(lhs).distance < this->G.V.at(rhs).distance;
-	};
+void SSPA2::dijkstra(Vertex* source){
 
 	vector<Vertex*> Q;
 	for(auto& v:G.V){
@@ -89,17 +73,11 @@ vector<Edge*> SSPA::dijkstra(Vertex* source,Vertex*& dest){
 		}
 
 		if(min_element_pos < 0)
-		    return vector<Edge*>();
+		    return ;
 
 		swap(Q[i],Q[min_element_pos]);
 
 		excluding_set[Q[i]->id + 1] = true;
-
-		if(Q[i]->d < 0){
-			dest = Q[i];
-			assert(dest != nullptr);
-			break;//early stop
-		}
 
 		Vertex* v = Q[i];
 
@@ -116,36 +94,44 @@ vector<Edge*> SSPA::dijkstra(Vertex* source,Vertex*& dest){
 			}
 		}
 	}
+}
 
-	if(dest == nullptr){
-		return vector<Edge*>();
-	}
-	
+void SSPA2::augment_flow(Vertex* dest){
+	Vertex* pesudoSource = &G.V.at(-1);
+	int min_value = numeric_limits<int>::max();
+	min_value = min(min_value,pesudoSource->d);
+	min_value = min(min_value,-dest->d);
 
 	Vertex* pVertex = dest;
 
-	//cout << pVertex->distance << endl;
-
-	unordered_set<Vertex*> visited_set;
-
-    //back trace
 	while(true){
-		
-		if(visited_set.count(pVertex)){
-			ret.clear();
-			cout << "error" << endl;
-			break;
-		}
-		    
-		visited_set.insert(pVertex);
-
-		ret.push_back(pVertex->from_edge);
+		const Edge *const pE = pVertex->from_edge;
+		if(pE->id > 0)
+	        min_value = min(min_value,pE->bandwidth - pE->x);
+		else
+			min_value = min(min_value,pE->bandwidth);
 		pVertex = pVertex->from_edge->from;
-		if(pVertex == source)
+		if(pVertex == pesudoSource)
 		    break;
 	}
 
-	reverse(ret.begin(),ret.end());
+	pesudoSource->d -= min_value;
+	dest->d += min_value;
 
-	return ret;
+	pVertex = dest;
+	
+	while(true){
+		Edge *const r = pVertex->from_edge;
+		if(r->id > 0){
+			r->x += min_value;
+			G.E.at(-r->id).bandwidth = r->x;
+		}
+		else{
+			G.E.at(-r->id).x -= min_value;
+			r->bandwidth = G.E.at(-r->id).x;
+		}
+		pVertex = pVertex->from_edge->from;
+		if(pVertex == pesudoSource)
+		    break;
+	}
 }
