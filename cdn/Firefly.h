@@ -85,6 +85,10 @@ public:
 
 	void optimize();
 
+	void init(vector<int> seed){
+		Fireflies[0].bits = seed;
+	}
+
 	Optimizer& lr;
 	
 	const int population;
@@ -107,8 +111,6 @@ public:
 	vector<int> consumer_map;
 
 	default_random_engine generator;
-
-	chrono::high_resolution_clock::time_point start_time;
 
 	uniform_int_distribution<int> _0_1_distribution;
 	uniform_int_distribution<int> _random_cell_distribution;

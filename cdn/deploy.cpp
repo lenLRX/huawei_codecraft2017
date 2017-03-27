@@ -6,22 +6,45 @@
 #include "LagrangianRelaxation.h"
 #include "SSPA.h"
 #include "SSPA2.h"
+#include "Relax.h"
 #include "Firefly.h"
+#include "Timer.h"
 #include <random>
 #include <algorithm>
 
 void testLR();
 
+/*
 void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	Graph G = parse(topo,line_num);
 	//LR optimizer(G);
+	Relax optimizer(G);
+
+	optimizer.optimize();
+
+    cout << "cost " << optimizer.G.total_cost() << endl;
+
+	write_result(optimizer.G.to_String().c_str(), filename);
+}
+*/
+
+
+
+void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
+	Timer::getInstance().start();
+	Graph G = parse(topo,line_num);
+	//LR optimizer(G);
+	Relax init_optimizer(G);
+	init_optimizer.optimize();
 	SSPA2 optimizer(G);
 
 	FireflySolver solver(optimizer,20,0.001,1,G.V.size());
+	solver.init(init_optimizer.get_result());
 	solver.optimize();
 	cout << "visited size " << solver.tabu.size() << endl;
 	write_result(solver.result.c_str(), filename);
 }
+
 
 //你要完成的功能总入口
 

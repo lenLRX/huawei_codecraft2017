@@ -1,4 +1,5 @@
 #include "Firefly.h"
+#include "Timer.h"
 
 #include <algorithm>
 
@@ -16,8 +17,7 @@ void FireflySolver::Randomize(Firefly& fly){
 void FireflySolver::UpdateObjectiveAndBestFly(){
 	Fmin = numeric_limits<int>::max();
 	for(int i = 0;i < population;i++){
-		auto time_now = chrono::high_resolution_clock::now();
-		if(chrono::duration_cast<chrono::seconds>(time_now - start_time).count() > 87)
+		if(Timer::getInstance().timeout())
 			throw "timeout";
 		auto& fly = Fireflies[i];
 		if(tabu.count(fly.bits) && i > 0){
@@ -37,6 +37,7 @@ void FireflySolver::UpdateObjectiveAndBestFly(){
 }
 
 void FireflySolver::CostOfFly(Firefly& fly,int i){
+	//cout << fly.count() << endl;
 	
 	lr.refresh();
 	unordered_set<int> includeing_set;
@@ -162,9 +163,34 @@ void FireflySolver::Alpha_step(Firefly& fly){
 				}
 			}
 		}
-		else if(rand_num < 0.05){
+		else if(rand_num < 0.5){
+			/*
 			int rand_position = _random_cell_distribution(generator);
 	        fly.newbits[rand_position] = 0;
+			*/
+
+			int delta = fly.count();
+
+			uniform_int_distribution<int> d(0,delta - 1);
+
+			int todelete = d(generator);
+
+			//cout << delta << "todelete " << todelete << endl;
+
+			size_t bits_size = fly.newbits.size();
+			int c = 0;
+			for(size_t i = 0;i < bits_size;i++){
+				if(fly.newbits[i]){
+					if(c == todelete){
+						//cout << "delete" << endl;
+						fly.newbits[i] = false;
+						break;
+					}
+					c++;
+				}
+					
+			}
+			
 		}
 		else if(rand_num < 0.1){
             int rand_position = _random_cell_distribution(generator);
@@ -277,7 +303,6 @@ int FireflySolver::Get_Closer(vector<Firefly> Fireflies,int site,int k){
 }
 
 void FireflySolver::optimize(){
-	start_time = chrono::high_resolution_clock::now();
 	while(true){
 		try{
 			UpdateObjectiveAndBestFly();

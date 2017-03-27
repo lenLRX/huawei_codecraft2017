@@ -130,5 +130,9 @@ void Optimizer::check(){
 
 		if(vp.second.d !=0 )
 			cout << "d: " << vp.second.d << endl;
+		
+		if(vp.second.d + sum != 0){
+			cout << "ID : " << vp.first << "unbalanced" << endl;
+		}
 	}
 }

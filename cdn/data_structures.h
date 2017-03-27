@@ -150,7 +150,8 @@ public:
 		
 		for(auto e:node->EdgesOut){
 #ifdef LEN_DBG
-			cout << "node: " << node->id << " flow " << flow << endl;
+			cout << "node: " << node->id << " flow " 
+			<< flow << " => e " << e->to->id << " x " << e->x << endl;
 #endif
 			if(flow <= 0)
 		        return;
@@ -232,6 +233,15 @@ public:
 			if(i != line_num - 1)
 			    ret += newline;
 		}
+
+		for(auto& cp:C){
+			cp.second.remaining_requirement = cp.second.requirement;
+		}
+
+		for(auto& ep:E){
+			ep.second.visited = 0;
+		}
+
 		return ret;
 	}
 
@@ -245,4 +255,5 @@ public:
 private:
     int i_counter;
 };
+//#undef LEN_DBG
 #endif//__DATA_STRUCTURE_H__

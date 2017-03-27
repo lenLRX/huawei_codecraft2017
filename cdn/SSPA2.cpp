@@ -21,6 +21,8 @@ bool SSPA2::optimize(){
 
 		sort(deficit_set.begin(),deficit_set.end(),
 		[](const Vertex* lhs,const Vertex* rhs)->bool{
+			if(false && lhs->distance == rhs->distance)
+			    cout << "TODO:handle equal case!" << endl;
 			return lhs->distance < rhs->distance;
 		});
 
