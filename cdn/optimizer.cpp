@@ -61,7 +61,6 @@ void Optimizer::create_pesudo_source(unordered_set<int> ExcludingVertex){
 }
 
 void Optimizer::refresh(){
-		//G = OriginalGraph;
 		vector<int> EdgesToErase;
 
 		for(auto& ep:G.E){
@@ -109,7 +108,7 @@ void Optimizer::refresh(){
 		for(auto& cp:G.C){
 			cp.second.remaining_requirement = cp.second.requirement;
 		}
-	}
+}
 
 void Optimizer::check(){
 	for(auto& vp:G.V){

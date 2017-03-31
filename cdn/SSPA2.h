@@ -10,6 +10,7 @@ public:
 
 	void dijkstra(Vertex* source);
 	void augment_flow(Vertex* dest);
+	int counter = 0;
 };
 
 #endif//__SSPA2_H__

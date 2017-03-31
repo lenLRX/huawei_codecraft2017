@@ -69,9 +69,9 @@ public:
 			}
 		}
 	
-	void UpdateObjectiveAndBestFly();
+	bool UpdateObjectiveAndBestFly();
 
-	void CostOfFly(Firefly& fly,int i);
+	bool CostOfFly(Firefly& fly,int i);
 
 	void Randomize(Firefly& fly);
 
@@ -83,9 +83,9 @@ public:
 	
 	int Get_Closer(vector<Firefly> Fireflies,int site,int k);
 
-	void optimize();
+	void optimize(int stop_round);
 
-	void init(vector<int> seed){
+	void init(vector<int> seed = vector<int>()){
 		Fireflies[0].bits = seed;
 	}
 

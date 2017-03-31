@@ -32,6 +32,8 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 
 void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	Timer::getInstance().start();
+	//Timer::getInstance().set(80);
+	Timer::getInstance().set(88500);
 	Graph G = parse(topo,line_num);
 	//LR optimizer(G);
 	Relax init_optimizer(G);
@@ -40,8 +42,22 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 
 	FireflySolver solver(optimizer,20,0.001,1,G.V.size());
 	solver.init(init_optimizer.get_result());
-	solver.optimize();
-	cout << "visited size " << solver.tabu.size() << endl;
+	solver.optimize(100);
+	
+	/*
+	auto test = init_optimizer.postOptimize();
+	for(auto id:test){
+		cout << id << endl;
+		solver.consumer_map[id] = true;
+	}
+	*/
+	for(auto& c:solver.consumer_map){
+		c = true;
+	}
+	solver.optimize(100000);
+	
+	
+	cout << "visited size " << solver.tabu.size() << " " << optimizer.counter << endl;
 	write_result(solver.result.c_str(), filename);
 }
 

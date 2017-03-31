@@ -6,6 +6,7 @@ class SPFA:public Optimizer
 	SPFA(Graph& G):Optimizer(G){}
 	virtual bool optimize();
 
-	vector<Edge*> spfa(Vertex* source,Vertex*& dest);
+	void spfa(Vertex* source);
+	void augment_flow(Vertex* dest);
 };
 #endif//__SPFA_H__

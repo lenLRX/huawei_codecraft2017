@@ -1,8 +1,10 @@
 #include "SSPA2.h"
+#include "heap.h"
 #include <assert.h>
 #include <algorithm>
 
 bool SSPA2::optimize(){
+	counter++;
 	Vertex* pesudoSource = &G.V.at(-1);
 	vector<Vertex*> deficit_set;
 
@@ -49,9 +51,128 @@ bool SSPA2::optimize(){
 	        
 	return true;
 }
+//#define USE_BINARY_HEAP
+//#define USE_FIBONACCI_HEAP
+#define NOHEAP
+
+#ifdef USE_FIBONACCI_HEAP
+
+#include "FibonacciHeap.h"
 
 void SSPA2::dijkstra(Vertex* source){
 
+	for(auto& v:G.V){
+		v.second.distance = numeric_limits<int>::max();
+	}
+
+	size_t v_size = G.V.size();
+
+	vector<fibonacci_node> nodes(v_size);
+	vector<fibonacci_node*> p_nodes(v_size);
+	for(size_t i = 0;i < v_size;i++){
+		p_nodes[i] = &nodes[i];
+	}
+
+	source->distance = 0;
+
+	fibonacci_heap _heap;
+
+	for(auto& v:G.V){
+		p_nodes[v.second.id + 1]->node_index = &v.second;
+		fib_heap_insert(&_heap,p_nodes[v.second.id + 1],v.second.distance);
+	}
+
+	while(true){
+		int min_distance = numeric_limits<int>::max();
+		//Extracting the min distant node.
+		fibonacci_node *min_node = fib_heap_extract_min(&_heap);
+
+		Vertex* v = nullptr;
+
+		if (min_node != nullptr) {
+			v = min_node->node_index;
+			if(v->distance == numeric_limits<int>::max())
+			    break;
+			//Updating the distances for the adjacent vertices of min distant unmarked node.
+			for(auto e:v->EdgesOut){
+				//if(excluding_set[e->to->id + 1])
+				//    continue;
+				Vertex* u = e->to;
+				if(e->bandwidth > 0 && e->bandwidth - e->x > 0 
+					&& u->distance > v->distance + e->cost){
+					u->distance = v->distance + e->cost;
+					u->from_edge = e;
+					fib_heap_decrease_key(&_heap, p_nodes[u->id + 1],
+								u->distance);
+				}
+			}
+		}
+		else{
+			break;
+		}
+	}
+
+	auto cmp = [](Vertex* v1,Vertex* v2)->bool{
+		return v1->distance > v2->distance;
+	};
+}
+
+#endif//USE_FIBONACCI_HEAP
+
+#ifdef USE_BINARY_HEAP
+
+void SSPA2::dijkstra(Vertex* source){
+
+	auto cmp = [](Vertex* v1,Vertex* v2)->bool{
+		return v1->distance > v2->distance;
+	};
+
+
+	for(auto& v:G.V){
+		v.second.distance = numeric_limits<int>::max();
+	}
+
+	heap<Vertex*,decltype(cmp)> _heap(cmp);
+	source->distance = 0;
+
+	_heap.push(source);
+
+	size_t v_size = G.V.size();
+
+	//set<Vertex*> excluding_set;
+	vector<int> in_heap(G.V.size(),false);
+	
+	while(!_heap.empty()){
+
+		Vertex* v = _heap.top();
+		_heap.pop();
+		in_heap[v->id + 1] = false;
+		
+
+		int my_distance = v->distance;
+
+		for(auto e:v->EdgesOut){
+			Vertex* u = e->to;
+			if(e->bandwidth > 0 && e->bandwidth - e->x > 0 
+			    && u->distance > v->distance + e->cost){
+				u->distance = v->distance + e->cost;
+				u->from_edge = e;
+				if(in_heap[u->id + 1]){
+					_heap.reheapify();
+				}
+				else{
+					in_heap[u->id + 1] = true;
+					_heap.push(u);
+				}
+			}
+		}
+	}
+}
+#endif//USE_BINARY_HEAP
+
+#ifdef NOHEAP
+
+void SSPA2::dijkstra(Vertex* source){
 	vector<Vertex*> Q;
 	for(auto& v:G.V){
 		v.second.distance = numeric_limits<int>::max();
@@ -97,6 +218,8 @@ void SSPA2::dijkstra(Vertex* source){
 		}
 	}
 }
+
+#endif//NOHEAP
 
 void SSPA2::augment_flow(Vertex* dest){
 	Vertex* pesudoSource = &G.V.at(-1);

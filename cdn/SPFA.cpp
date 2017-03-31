@@ -16,37 +16,25 @@ bool SPFA::optimize(){
 		if(deficit_set.size() == 0)
 		    break;//done!
 		
-		int min_value = numeric_limits<int>::max();
+		spfa(pesudoSource);
 
-		Vertex* dest = nullptr;
-		vector<Edge*> path = spfa(pesudoSource,dest);
-		if(path.size() == 0)
-			return false;
-		
-		min_value = min(min_value,pesudoSource->d);
-		min_value = min(min_value,-dest->d);
+		sort(deficit_set.begin(),deficit_set.end(),
+		[](const Vertex* lhs,const Vertex* rhs)->bool{
+			if(false && lhs->distance == rhs->distance)
+			    cout << "TODO:handle equal case!" << endl;
+			return lhs->distance < rhs->distance;
+		});
 
-		for(auto pE:path){
-			if(pE->id > 0)
-			    min_value = min(min_value,pE->bandwidth - pE->x);
-		    else
-			    min_value = min(min_value,pE->bandwidth);
-		}
+		if(deficit_set[0]->distance == numeric_limits<int>::max())
+		    return false;//no solution
 
-		pesudoSource->d -= min_value;
-		dest->d += min_value;
-
-		for(auto r:path){
-			if(r->id > 0){
-				r->x += min_value;
-			    G.E.at(-r->id).bandwidth = r->x;
-			}
+		for(Vertex* dest:deficit_set){
+			if(dest->distance == numeric_limits<int>::max())
+			    break;
 			else{
-				G.E.at(-r->id).x -= min_value;
-				r->bandwidth = G.E.at(-r->id).x;
+				augment_flow(dest);
 			}
 		}
-
         
 		for(auto it = deficit_set.begin();it != deficit_set.end();){
 			if((*it)->d == 0){
@@ -61,7 +49,7 @@ bool SPFA::optimize(){
 	return true;
 }
 
-vector<Edge*> SPFA::spfa(Vertex* source,Vertex*& dest){
+void SPFA::spfa(Vertex* source){
 	vector<Edge*> ret;
 
 	queue<Vertex*> Q;
@@ -133,4 +121,44 @@ vector<Edge*> SPFA::spfa(Vertex* source,Vertex*& dest){
 
 	return ret;
 	*/
+}
+
+void SPFA::augment_flow(Vertex* dest){
+	Vertex* pesudoSource = &G.V.at(-1);
+	int min_value = numeric_limits<int>::max();
+	min_value = min(min_value,pesudoSource->d);
+	min_value = min(min_value,-dest->d);
+
+	Vertex* pVertex = dest;
+
+	while(true){
+		const Edge *const pE = pVertex->from_edge;
+		if(pE->id > 0)
+	        min_value = min(min_value,pE->bandwidth - pE->x);
+		else
+			min_value = min(min_value,pE->bandwidth);
+		pVertex = pVertex->from_edge->from;
+		if(pVertex == pesudoSource)
+		    break;
+	}
+
+	pesudoSource->d -= min_value;
+	dest->d += min_value;
+
+	pVertex = dest;
+	
+	while(true){
+		Edge *const r = pVertex->from_edge;
+		if(r->id > 0){
+			r->x += min_value;
+			G.E.at(-r->id).bandwidth = r->x;
+		}
+		else{
+			G.E.at(-r->id).x -= min_value;
+			r->bandwidth = G.E.at(-r->id).x;
+		}
+		pVertex = pVertex->from_edge->from;
+		if(pVertex == pesudoSource)
+		    break;
+	}
 }

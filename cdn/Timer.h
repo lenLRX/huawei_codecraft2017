@@ -12,16 +12,25 @@ public:
 		return *instance;
 	}
 
+	void set(int t){
+		limit = t;
+	}
+
 	void start(){
 		start_time = high_resolution_clock::now();
 	}
 
 	bool timeout(){
-		return duration_cast<seconds>(high_resolution_clock::now() - start_time).count() > 88;
+		return duration_cast<milliseconds>(high_resolution_clock::now() - start_time).count() > limit;
+	}
+
+	int get(){
+		return duration_cast<milliseconds>(high_resolution_clock::now() - start_time).count();
 	}
 
 private:
     Timer(){};
+	int limit;
 	high_resolution_clock::time_point start_time;
 };
 #endif//__TIMER_H__
