@@ -15,7 +15,7 @@ void FireflySolver::Randomize(Firefly& fly){
 }
 
 bool FireflySolver::UpdateObjectiveAndBestFly(){
-	bool ret;
+	bool ret = false;
 	Fmin = numeric_limits<int>::max();
 	for(int i = 0;i < population;i++){
 		if(Timer::getInstance().timeout())

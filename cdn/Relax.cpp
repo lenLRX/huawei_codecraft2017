@@ -51,6 +51,10 @@ bool Relax::optimize(){
 		if(id%size == 0){
 			if(!b)
 			    break;
+			sort(deficit_set.begin(),deficit_set.end(),
+			[](const Vertex* lhs,const Vertex* rhs)->bool{
+				return lhs->d > rhs->d;
+			});
 			b = false;
 		}
 
@@ -85,7 +89,7 @@ bool Relax::optimize(){
 		}
 		
 
-		if(false && !b_vertex){
+		if(!b_vertex){
 			for(Vertex* v:deficit_set){
 				//cout << v->id << endl;
 			}
