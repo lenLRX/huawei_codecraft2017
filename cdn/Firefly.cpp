@@ -61,7 +61,7 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 	if(b){
 		for(int i = 0;i < MaxEdgeNum;i++){
 			int e = lr.G.array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
-			if(lr.G.array_Edge_x[e])
+			if(lr.G.array_Edge_x[e] > 0)
 			    fly.bits[lr.G.array_Edge_to[e]] = true;
 			else
 			    fly.bits[lr.G.array_Edge_to[e]] = false;
