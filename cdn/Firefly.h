@@ -1,11 +1,15 @@
 #ifndef __FIREFLY_H__
 #define __FIREFLY_H__
 
-#include "LagrangianRelaxation.h"
+#include <vector>
 #include <random>
 #include <chrono>
 #include <queue>
 #include <set>
+
+#include "optimizer.h"
+
+using namespace std;
 
 class Firefly
 {
@@ -50,10 +54,10 @@ public:
 		GlobalMin(numeric_limits<int>::max()),
 		_float_distribution(uniform_real_distribution<float>(0,1)){
 			consumer_map = vector<int>(NodeNum,false);
-			for(auto cp:lr.G.C){
-				consumer_map[cp.second.fromVertex->id] = true;
-				cout << cp.second.fromVertex->id << endl;
+			for(int i = 0;i < lr.G.ConsumerNum;i++){
+				consumer_map[lr.G.array_Consumer_fromVertex[i]] = true;
 			}
+
 			Fireflies.resize(population);
 			for(auto& fly:Fireflies){
 				fly.resize(NodeNum);
@@ -64,8 +68,8 @@ public:
 				Fireflies[0].bits[i] = 0;
 			}
 
-			for(const auto& cp:lr.G.C){
-				Fireflies[0].bits[cp.second.fromVertex->id] = 1;
+			for(int i = 0;i < lr.G.ConsumerNum;i++){
+				Fireflies[0].bits[lr.G.array_Consumer_fromVertex[i]] = true;
 			}
 		}
 	

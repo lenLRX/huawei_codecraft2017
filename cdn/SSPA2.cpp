@@ -5,12 +5,11 @@
 
 bool SSPA2::optimize(){
 	counter++;
-	Vertex* pesudoSource = &G.V.at(-1);
-	vector<Vertex*> deficit_set;
+	vector<int> deficit_set;
 
-	for(auto& vp:G.V){
-		if(vp.second.d < 0)
-		    deficit_set.push_back(&vp.second);
+	for(int i = 0;i < G.VertexNum;i++){
+		if(G.array_Vertex_d[i] < 0)
+		    deficit_set.push_back(i);
 	}
 
     while(true){
@@ -19,20 +18,18 @@ bool SSPA2::optimize(){
 		
 		
 
-		dijkstra(pesudoSource);
+		dijkstra(-1);
 
 		sort(deficit_set.begin(),deficit_set.end(),
-		[](const Vertex* lhs,const Vertex* rhs)->bool{
-			if(false && lhs->distance == rhs->distance)
-			    cout << "TODO:handle equal case!" << endl;
-			return lhs->distance < rhs->distance;
+		[this](int lhs,int rhs)->bool{
+			return G.array_Vertex_distance[lhs] <  G.array_Vertex_distance[rhs];
 		});
 
-		if(deficit_set[0]->distance == numeric_limits<int>::max())
+		if(G.array_Vertex_distance[deficit_set[0]] == numeric_limits<int>::max())
 		    return false;//no solution
 
-		for(Vertex* dest:deficit_set){
-			if(dest->distance == numeric_limits<int>::max())
+		for(int dest:deficit_set){
+			if(G.array_Vertex_distance[dest] == numeric_limits<int>::max())
 			    break;
 			else{
 				augment_flow(dest);
@@ -40,7 +37,7 @@ bool SSPA2::optimize(){
 		}
         
 		for(auto it = deficit_set.begin();it != deficit_set.end();){
-			if((*it)->d == 0){
+			if(G.array_Vertex_d[(*it)] == 0){
 				it = deficit_set.erase(it);
 			}
 			else{
@@ -172,48 +169,51 @@ void SSPA2::dijkstra(Vertex* source){
 
 #ifdef NOHEAP
 
-void SSPA2::dijkstra(Vertex* source){
-	vector<Vertex*> Q;
-	for(auto& v:G.V){
-		v.second.distance = numeric_limits<int>::max();
-		Q.push_back(&v.second);
+void SSPA2::dijkstra(int source){
+	vector<int> Q;
+	for(int i = -1;i < G.VertexNum;i++){
+		G.array_Vertex_distance[i] = numeric_limits<int>::max();
+		Q.push_back(i);
 	}
-	source->distance = 0;
+	G.array_Vertex_distance[source] = 0;
 
-	size_t v_size = G.V.size();
+	size_t v_size = G.VertexNum + 1;
 
 	//set<Vertex*> excluding_set;
-	vector<int> excluding_set(G.V.size(),false);
+	vector<int> excluding_set(v_size,false);
 	
 	for(size_t i = 0;i < v_size - 1;i++){
 		int min_element_pos = -1;
 		int min_value = numeric_limits<int>::max();
 		for(size_t j = i;j < v_size;j++){
-			if(Q[j]->distance < min_value){
-				min_value = Q[j]->distance;
+			if(G.array_Vertex_distance[Q[j]] < min_value){
+				min_value = G.array_Vertex_distance[Q[j]];
 				min_element_pos = j;
 			}
 		}
 
 		if(min_element_pos < 0)
-		    return ;
+		    return;
 
 		swap(Q[i],Q[min_element_pos]);
 
-		excluding_set[Q[i]->id + 1] = true;
+		excluding_set[Q[i] + 1] = true;
 
-		Vertex* v = Q[i];
+		int v = Q[i];
 
-		int my_distance = v->distance;
-
-		for(auto e:v->EdgesOut){
-			if(excluding_set[e->to->id + 1])
+		//for(auto e:v->EdgesOut){
+		for(int j = 0;j < MaxEdgeNum;j ++){
+			int e = G.array_Vertex_EdgesOut[v * MaxEdgeNum + j];
+			if(e < 0)
+			    break;
+			int u = G.array_Edge_to[e];
+			if(excluding_set[u + 1])
 			    continue;
-			Vertex* u = e->to;
-			if(e->bandwidth > 0 && e->bandwidth - e->x > 0 
-			    && u->distance > v->distance + e->cost){
-				u->distance = v->distance + e->cost;
-				u->from_edge = e;
+			
+			if(G.array_Edge_bandwidth[e] > 0 && G.array_Edge_bandwidth[e] - G.array_Edge_x[e] > 0 
+			    && G.array_Vertex_distance[u] > G.array_Vertex_distance[v] + G.array_Edge_cost[e]){
+				G.array_Vertex_distance[u] = G.array_Vertex_distance[v] + G.array_Edge_cost[e];
+				G.array_Vertex_from_edge[u] = e;
 			}
 		}
 	}
@@ -221,42 +221,65 @@ void SSPA2::dijkstra(Vertex* source){
 
 #endif//NOHEAP
 
-void SSPA2::augment_flow(Vertex* dest){
-	Vertex* pesudoSource = &G.V.at(-1);
-	int min_value = numeric_limits<int>::max();
-	min_value = min(min_value,pesudoSource->d);
-	min_value = min(min_value,-dest->d);
+void SSPA2::augment_flow(int dest){
+	int source = -1;
+	int dest_edge,source_edge;
 
-	Vertex* pVertex = dest;
+	for(int i = 0;i < MaxEdgeNum;i++){
+		int e = G.array_Vertex_EdgesIn[dest * MaxEdgeNum + i];
+		if(G.array_Edge_from[e] == -1){
+			dest_edge = e;
+			break;
+		}
+	}
+
+	for(int i = 0;i < MaxEdgeNum;i++){
+		int e = G.array_Vertex_EdgesIn[source * MaxEdgeNum + i];
+		if(G.array_Edge_from[e] == -1){
+			source_edge = e;
+			break;
+		}
+	}
+	int min_value = numeric_limits<int>::max();
+	
+	min_value = min(min_value,G.array_Vertex_d[-1]);
+	min_value = min(min_value,-G.array_Vertex_d[dest]);
+
+	int pVertex = dest;
+
+	int cost = 0;
 
 	while(true){
-		const Edge *const pE = pVertex->from_edge;
-		if(pE->id > 0)
-	        min_value = min(min_value,pE->bandwidth - pE->x);
+		//cout << "id: " << pVertex->id << endl;
+		int e = G.array_Vertex_from_edge[pVertex];
+		cost += G.array_Edge_cost[e];
+		if(G.array_Edge_IsReversEdge[e])
+	        min_value = min(min_value,G.array_Edge_bandwidth[e] - G.array_Edge_x[e]);
 		else
-			min_value = min(min_value,pE->bandwidth);
-		pVertex = pVertex->from_edge->from;
-		if(pVertex == pesudoSource)
+			min_value = min(min_value,G.array_Edge_bandwidth[e]);
+		pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
+		if(pVertex == source)
 		    break;
 	}
 
-	pesudoSource->d -= min_value;
-	dest->d += min_value;
+	G.array_Vertex_d[-1] -= min_value;
+	G.array_Vertex_d[dest] += min_value;
 
 	pVertex = dest;
 	
 	while(true){
-		Edge *const r = pVertex->from_edge;
-		if(r->id > 0){
-			r->x += min_value;
-			G.E.at(-r->id).bandwidth = r->x;
+		int r = G.array_Vertex_from_edge[pVertex];
+		//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
+		if(G.array_Edge_IsReversEdge[r]){
+			G.array_Edge_x[r] += min_value;
+			G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
 		}
 		else{
-			G.E.at(-r->id).x -= min_value;
-			r->bandwidth = G.E.at(-r->id).x;
+			G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]] -= min_value;
+			G.array_Edge_bandwidth[r] = G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]];
 		}
-		pVertex = pVertex->from_edge->from;
-		if(pVertex == pesudoSource)
-		    break;
+		pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
+		if(pVertex == source)
+			break;
 	}
 }

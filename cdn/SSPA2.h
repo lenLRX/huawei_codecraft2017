@@ -8,8 +8,8 @@ public:
 	SSPA2(Graph& G):Optimizer(G){}
 	virtual bool optimize();
 
-	void dijkstra(Vertex* source);
-	void augment_flow(Vertex* dest);
+	void dijkstra(int source);
+	void augment_flow(int dest);
 	int counter = 0;
 };
 

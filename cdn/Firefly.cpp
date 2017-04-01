@@ -44,7 +44,7 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 
 	bool ret = false;
 	
-	lr.refresh();
+	lr.G.restore();
 	unordered_set<int> includeing_set;
 	for(size_t i = 0;i < NodeNum;i++){
 		if(fly.bits[i])
@@ -59,11 +59,12 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 	    fly.objective = numeric_limits<int>::max();
 	
 	if(b){
-		for(auto out_from:lr.G.V[-1].EdgesOut){
-			if(out_from->x > 0)
-			    fly.bits[out_from->to->id] = true;
+		for(int i = 0;i < MaxEdgeNum;i++){
+			int e = lr.G.array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
+			if(lr.G.array_Edge_x[e])
+			    fly.bits[lr.G.array_Edge_to[e]] = true;
 			else
-			    fly.bits[out_from->to->id] = false;
+			    fly.bits[lr.G.array_Edge_to[e]] = false;
 		}
 	}
 	

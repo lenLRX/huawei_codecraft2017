@@ -4,11 +4,11 @@
 #include "data_structures.h"
 #include "parse.h"
 #include "Relax.h"
-/*
+
 #include "SSPA2.h"
 
 #include "Firefly.h"
-*/
+
 #include "Timer.h"
 #include <random>
 #include <algorithm>
@@ -42,16 +42,16 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
     
 	Relax init_optimizer(G);
 	init_optimizer.optimize();
-	/*
+	
 	SSPA2 optimizer(G);
 
-	FireflySolver solver(optimizer,20,0.001,1,G.V.size());
+	FireflySolver solver(optimizer,20,0.001,1,G.VertexNum);
 	solver.init(init_optimizer.get_result());
 	for(auto& c:solver.consumer_map){
 		c = true;
 	}
 	solver.optimize(100);
-	*/
+	
 	/*
 	auto test = init_optimizer.postOptimize();
 	for(auto id:test){
