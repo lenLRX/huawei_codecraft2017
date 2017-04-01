@@ -28,7 +28,7 @@ void Optimizer::check(){
 			int e = G.array_Vertex_EdgesIn[i * MaxEdgeNum + j];
 			if(e < 0)
 			    break;
-			if(G.array_Edge_IsReversEdge[e])
+			if(!G.array_Edge_IsReversEdge[e])
 				sum += G.array_Edge_x[e];
 		}
 
@@ -36,7 +36,7 @@ void Optimizer::check(){
 			int e = G.array_Vertex_EdgesOut[i * MaxEdgeNum + j];
 			if(e < 0)
 			    break;
-			if(G.array_Edge_IsReversEdge[e])
+			if(!G.array_Edge_IsReversEdge[e])
 				sum -= G.array_Edge_x[e];
 		}
 

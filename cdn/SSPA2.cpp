@@ -223,23 +223,7 @@ void SSPA2::dijkstra(int source){
 
 void SSPA2::augment_flow(int dest){
 	int source = -1;
-	int dest_edge,source_edge;
 
-	for(int i = 0;i < MaxEdgeNum;i++){
-		int e = G.array_Vertex_EdgesIn[dest * MaxEdgeNum + i];
-		if(G.array_Edge_from[e] == -1){
-			dest_edge = e;
-			break;
-		}
-	}
-
-	for(int i = 0;i < MaxEdgeNum;i++){
-		int e = G.array_Vertex_EdgesIn[source * MaxEdgeNum + i];
-		if(G.array_Edge_from[e] == -1){
-			source_edge = e;
-			break;
-		}
-	}
 	int min_value = numeric_limits<int>::max();
 	
 	min_value = min(min_value,G.array_Vertex_d[-1]);
@@ -247,13 +231,10 @@ void SSPA2::augment_flow(int dest){
 
 	int pVertex = dest;
 
-	int cost = 0;
-
 	while(true){
 		//cout << "id: " << pVertex->id << endl;
 		int e = G.array_Vertex_from_edge[pVertex];
-		cost += G.array_Edge_cost[e];
-		if(G.array_Edge_IsReversEdge[e])
+		if(!G.array_Edge_IsReversEdge[e])
 	        min_value = min(min_value,G.array_Edge_bandwidth[e] - G.array_Edge_x[e]);
 		else
 			min_value = min(min_value,G.array_Edge_bandwidth[e]);
@@ -270,7 +251,7 @@ void SSPA2::augment_flow(int dest){
 	while(true){
 		int r = G.array_Vertex_from_edge[pVertex];
 		//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
-		if(G.array_Edge_IsReversEdge[r]){
+		if(!G.array_Edge_IsReversEdge[r]){
 			G.array_Edge_x[r] += min_value;
 			G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
 		}

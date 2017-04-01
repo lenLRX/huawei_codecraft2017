@@ -186,7 +186,7 @@ bool Relax::augment_flow(int source,int dest){
 		//cout << "id: " << pVertex->id << endl;
 		int e = G.array_Vertex_from_edge[pVertex];
 		cost += G.array_Edge_cost[e];
-		if(G.array_Edge_IsReversEdge[e])
+		if(!G.array_Edge_IsReversEdge[e])
 	        min_value = min(min_value,G.array_Edge_bandwidth[e] - G.array_Edge_x[e]);
 		else
 			min_value = min(min_value,G.array_Edge_bandwidth[e]);
@@ -208,7 +208,7 @@ bool Relax::augment_flow(int source,int dest){
 			while(true){
 				int r = G.array_Vertex_from_edge[pVertex];
 				//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
-				if(G.array_Edge_IsReversEdge[r]){
+				if(!G.array_Edge_IsReversEdge[r]){
 					G.array_Edge_x[r] += min_value;
 					G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
 				}
@@ -236,7 +236,7 @@ bool Relax::augment_flow(int source,int dest){
 			while(true){
 				int r = G.array_Vertex_from_edge[pVertex];
 				//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
-				if(G.array_Edge_IsReversEdge[r]){
+				if(!G.array_Edge_IsReversEdge[r]){
 					G.array_Edge_x[r] += min_value;
 					G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
 				}
