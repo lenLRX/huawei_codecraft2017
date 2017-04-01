@@ -48,8 +48,8 @@ Graph parse(char* graph[MAX_EDGE_NUM], int line_num){
 		ss >> s;
 		int cost = stoi(s);
 
-		G.add_Edge(G.GetAnID(),from,to,bandwidth,cost);
-		G.add_Edge(G.GetAnID(),to,from,bandwidth,cost);
+		G.add_Edge(from,to,bandwidth,cost);
+		G.add_Edge(to,from,bandwidth,cost);
 	}
 
 	for(i = halfp + 1;i < line_num;i++){
@@ -63,13 +63,8 @@ Graph parse(char* graph[MAX_EDGE_NUM], int line_num){
 		ss >> s;
 		int requirement = stoi(s);
 
-		if(G.V.count(fromID) == 0)
-		    G.add_Vertex(fromID);
-
-		G.add_Consumer(ConsumerID,&G.V.at(fromID),requirement);
+		G.add_Consumer(ConsumerID,fromID,requirement);
 	}
-
-	G.VertexCompletement();
 
 	return G;
 }

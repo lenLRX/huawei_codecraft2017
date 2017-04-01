@@ -3,11 +3,12 @@
 #include <stdio.h>
 #include "data_structures.h"
 #include "parse.h"
-#include "LagrangianRelaxation.h"
-#include "SSPA.h"
+
+/*
 #include "SSPA2.h"
 #include "Relax.h"
 #include "Firefly.h"
+*/
 #include "Timer.h"
 #include <random>
 #include <algorithm>
@@ -35,7 +36,8 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	//Timer::getInstance().set(80);
 	Timer::getInstance().set(88500);
 	Graph G = parse(topo,line_num);
-	//LR optimizer(G);
+
+    /*
 	Relax init_optimizer(G);
 	init_optimizer.optimize();
 	SSPA2 optimizer(G);
@@ -46,7 +48,7 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 		c = true;
 	}
 	solver.optimize(100);
-	
+	*/
 	/*
 	auto test = init_optimizer.postOptimize();
 	for(auto id:test){
@@ -54,6 +56,7 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 		solver.consumer_map[id] = true;
 	}
 	*/
+	/*
 	for(auto& c:solver.consumer_map){
 		c = true;
 	}
@@ -62,6 +65,7 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	
 	cout << "visited size " << solver.tabu.size() << " " << optimizer.counter << endl;
 	write_result(solver.result.c_str(), filename);
+	*/
 }
 
 
