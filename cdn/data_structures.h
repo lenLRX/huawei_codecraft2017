@@ -14,7 +14,7 @@
 
 //#define LEN_DBG
 
-const int MaxEdgeNum = 20 * 2;//reverse edge
+const int MaxEdgeNum = 500;//21 * 2;//reverse edge
 const int MaxVertexNum = 1000;//+1 for pesudo vertex
 const int MaxConsumerNum = 500;
 
@@ -242,17 +242,17 @@ public:
 		memcpy(backup_raw_array_Vertex_EdgesIn,raw_array_Vertex_EdgesIn,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
 		memcpy(backup_raw_array_Vertex_distance,raw_array_Vertex_distance,sizeof(int) * (MaxVertexNum + 1));
 		memcpy(backup_raw_array_Vertex_from_edge,raw_array_Vertex_from_edge,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(backup_array_Consumer_fromVertex,array_Consumer_fromVertex,sizeof(int) * (MaxConsumerNum + 1));
-		memcpy(backup_array_Consumer_requirement,array_Consumer_requirement,sizeof(int) * (MaxConsumerNum + 1));
-		memcpy(backup_array_Consumer_remaining_requirement,array_Consumer_remaining_requirement,sizeof(int) * (ConsumerNum + 1));
-		memcpy(backup_raw_array_Edge_from,array_Edge_from,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_to,array_Edge_to,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_bandwidth,array_Edge_bandwidth,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_cost,array_Edge_cost,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_x,array_Edge_x,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_visited,array_Edge_visited,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_ResidualEdgeNo,array_Edge_ResidualEdgeNo,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_IsReversEdge,array_Edge_IsReversEdge,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(backup_array_Consumer_fromVertex,array_Consumer_fromVertex,sizeof(int) * MaxConsumerNum);
+		memcpy(backup_array_Consumer_requirement,array_Consumer_requirement,sizeof(int) * MaxConsumerNum);
+		memcpy(backup_array_Consumer_remaining_requirement,array_Consumer_remaining_requirement,sizeof(int) * MaxConsumerNum);
+		memcpy(backup_raw_array_Edge_from,raw_array_Edge_from,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(backup_raw_array_Edge_to,raw_array_Edge_to,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(backup_raw_array_Edge_bandwidth,raw_array_Edge_bandwidth,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(backup_raw_array_Edge_cost,raw_array_Edge_cost,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(backup_raw_array_Edge_x,raw_array_Edge_x,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(backup_raw_array_Edge_visited,raw_array_Edge_visited,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(backup_raw_array_Edge_ResidualEdgeNo,raw_array_Edge_ResidualEdgeNo,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(backup_raw_array_Edge_IsReversEdge,raw_array_Edge_IsReversEdge,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
 		back_i_counter = i_counter;
 	}
 
@@ -263,17 +263,17 @@ public:
 		memcpy(raw_array_Vertex_EdgesIn,backup_raw_array_Vertex_EdgesIn,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
 		memcpy(raw_array_Vertex_distance,backup_raw_array_Vertex_distance,sizeof(int) * (MaxVertexNum + 1));
 		memcpy(raw_array_Vertex_from_edge,backup_raw_array_Vertex_from_edge,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(array_Consumer_fromVertex,backup_array_Consumer_fromVertex,sizeof(int) * (MaxConsumerNum + 1));
-		memcpy(array_Consumer_requirement,backup_array_Consumer_requirement,sizeof(int) * (MaxConsumerNum + 1));
-		memcpy(array_Consumer_remaining_requirement,backup_array_Consumer_remaining_requirement,sizeof(int) * (MaxConsumerNum + 1));
-		memcpy(array_Edge_from,backup_raw_array_Edge_from,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(array_Edge_to,backup_raw_array_Edge_to,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(array_Edge_bandwidth,backup_raw_array_Edge_bandwidth,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(array_Edge_cost,backup_raw_array_Edge_cost,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(array_Edge_x,backup_raw_array_Edge_x,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(array_Edge_visited,backup_raw_array_Edge_visited,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(array_Edge_ResidualEdgeNo,backup_raw_array_Edge_ResidualEdgeNo,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(array_Edge_IsReversEdge,backup_raw_array_Edge_IsReversEdge,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(array_Consumer_fromVertex,backup_array_Consumer_fromVertex,sizeof(int) * MaxConsumerNum);
+		memcpy(array_Consumer_requirement,backup_array_Consumer_requirement,sizeof(int) * MaxConsumerNum);
+		memcpy(array_Consumer_remaining_requirement,backup_array_Consumer_remaining_requirement,sizeof(int) * MaxConsumerNum);
+		memcpy(raw_array_Edge_from,backup_raw_array_Edge_from,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(raw_array_Edge_to,backup_raw_array_Edge_to,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(raw_array_Edge_bandwidth,backup_raw_array_Edge_bandwidth,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(raw_array_Edge_cost,backup_raw_array_Edge_cost,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(raw_array_Edge_x,backup_raw_array_Edge_x,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(raw_array_Edge_visited,backup_raw_array_Edge_visited,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(raw_array_Edge_ResidualEdgeNo,backup_raw_array_Edge_ResidualEdgeNo,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		memcpy(raw_array_Edge_IsReversEdge,backup_raw_array_Edge_IsReversEdge,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
 		i_counter = back_i_counter;
 	}
 
@@ -319,6 +319,8 @@ public:
 		
 		array_Edge_from[id] = from;
 		array_Edge_to[id] = to;
+		if(!isReverse)
+		    array_Edge_bandwidth[id] = bandwidth;
 		array_Edge_cost[id] = cost;
 		array_Edge_x[id] = 0;
 		array_Edge_visited[id] = 0;
@@ -403,7 +405,8 @@ public:
 
 		//for(auto out_from:V[-1].EdgesOut){
 		for(int i = 0;i < MaxEdgeNum;i++){
-			if(array_Edge_x[-1 * MaxEdgeNum + i] > 0)
+			int e = array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
+			if(array_Edge_x[e] > 0)
 			    sum += ServerCost;
 		}
 		return sum;

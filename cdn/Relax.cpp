@@ -85,7 +85,7 @@ bool Relax::optimize(){
 
 			//for(auto e:(*it)->EdgesIn){
 			for(int j = 0;j < MaxEdgeNum;j++){
-				int e = G.array_Edge_from[(*it) * MaxEdgeNum + j];
+				int e = G.array_Vertex_EdgesIn[(*it) * MaxEdgeNum + j];
 				if(G.array_Edge_from[e] == -1){
 					source_edge = e;
 					break;
@@ -141,6 +141,8 @@ void Relax::dijkstra(int source){
 		//for(auto e:v->EdgesOut){
 		for(int j = 0;j < MaxEdgeNum;j ++){
 			int e = G.array_Vertex_EdgesOut[v * MaxEdgeNum + j];
+			if(e < 0)
+			    break;
 			int u = G.array_Edge_to[e];
 			if(excluding_set[u + 1] || u < 0)
 			    continue;
@@ -193,6 +195,7 @@ bool Relax::augment_flow(int source,int dest){
 		    break;
 	}
 
+/*
     if(!G.array_Edge_IsReversEdge[G.array_Vertex_from_edge[dest]]){
 		if(cost * min_value < 0){
 			//可以抵消一部分流量
@@ -220,7 +223,7 @@ bool Relax::augment_flow(int source,int dest){
 			return true;
 		}
 	}
-	else{
+	else*/{
 		if(G.array_Edge_x[dest_edge] <= min_value && cost * min_value < G.ServerCost){
 			//cout << "type2 : source : " << source->id << " dest: " << dest->id << endl;
 			//流量可以替代这个服务器
