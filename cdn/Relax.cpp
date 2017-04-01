@@ -5,39 +5,26 @@
 #include <string>
 
 bool Relax::optimize(){
-	bool need_init = false;
-    if(G.V.find(-1) == G.V.end()){
-		need_init = true;
-		unordered_set<int> including_set;
-		for(const auto& cp:G.C){
-			including_set.insert(cp.second.fromVertex->id);
-		}
-		create_pesudo_source(including_set);
+
+	G.restore();
+
+	unordered_set<int> including_set;
+	for(int i = 0;i < G.ConsumerNum;i++){
+		including_set.insert(G.array_Consumer_fromVertex[i]);
 	}
+	create_pesudo_source(including_set);
 
-	
+	vector<int> deficit_set;
 
-	Vertex* pesudoSource = &G.V.at(-1);
-
-    if(need_init){
-		for(auto e:pesudoSource->EdgesOut){
-			e->x = -e->to->d;
-		}
-	}
-	
-
-	vector<Vertex*> deficit_set;
-
-	for(auto e:pesudoSource->EdgesOut){
-		if(e->x > 0){
-			deficit_set.push_back(e->to);
-			//cout << e->to->id << endl;
-		}
+	for(int i = 0;i < MaxEdgeNum;i++){
+		int e = G.array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
+		if(e < 0)
+		    break;
+		G.array_Edge_x[e] = -G.array_Vertex_d[G.array_Edge_to[e]];
+		deficit_set.push_back(G.array_Edge_to[e]);
 	}
 	
-	vector<Vertex*> deficit_set_original = deficit_set;
-
-	
+	vector<int> deficit_set_original = deficit_set;
 
 	bool b = true;
 
@@ -52,8 +39,8 @@ bool Relax::optimize(){
 			if(!b)
 			    break;
 			sort(deficit_set.begin(),deficit_set.end(),
-			[](const Vertex* lhs,const Vertex* rhs)->bool{
-				return lhs->d > rhs->d;
+			[this](const int lhs,const int rhs)->bool{
+				return G.array_Vertex_distance[lhs] > G.array_Vertex_distance[rhs];
 			});
 			b = false;
 		}
@@ -67,33 +54,23 @@ bool Relax::optimize(){
 		dijkstra(deficit_set.front());
 
 		sort(deficit_set.begin() + 1,deficit_set.end(),
-		[](const Vertex* lhs,const Vertex* rhs)->bool{
-			return lhs->distance < rhs->distance;
+		[this](const int lhs,const int rhs)->bool{
+			return G.array_Vertex_distance[lhs] < G.array_Vertex_distance[rhs];
 		});
 
-		
-
 		for(size_t i = 1;i < size;i++){
-			Vertex* dest = deficit_set[i];
-			if(dest->distance == numeric_limits<int>::max())
+			int dest = deficit_set[i];
+			if(G.array_Vertex_distance[dest] == numeric_limits<int>::max())
 			    break;
 			else{
 				bool ret = augment_flow(deficit_set[0],dest);
-				if(false&&ret){
-					write_result(G.to_String().c_str(), 
-					(string("./tmp/") + to_string(id) + " " 
-					+ to_string(i) + string(" cost ") + to_string(G.total_cost()) + ".txt").c_str());
-				}
 				b_vertex = b_vertex || ret;
 			}
 		}
 		
 
-		if(!b_vertex){
-			for(Vertex* v:deficit_set){
-				//cout << v->id << endl;
-			}
-			Vertex* source = deficit_set[0];
+		if(false && !b_vertex){
+			int source = deficit_set[0];
 			reverse_dijkstra(source);
 			deficit_set.erase(deficit_set.begin());
 			bool ret = reverse_augment_flow(source,deficit_set);
@@ -104,17 +81,18 @@ bool Relax::optimize(){
 
 		
 		for(auto it = deficit_set_original.begin();it != deficit_set_original.end();){
-			int source_to_node = 0;
-			Edge* source_edge;
+			int source_edge;
 
-			for(auto e:(*it)->EdgesIn){
-				if(e->from->id == -1){
+			//for(auto e:(*it)->EdgesIn){
+			for(int j = 0;j < MaxEdgeNum;j++){
+				int e = G.array_Edge_from[(*it) * MaxEdgeNum + j];
+				if(G.array_Edge_from[e] == -1){
 					source_edge = e;
 					break;
 				}
 			}
 
-			if(source_edge->x == 0){
+			if(G.array_Edge_x[source_edge] == 0){
 				it = deficit_set_original.erase(it);
 			}
 			else{
@@ -127,26 +105,26 @@ bool Relax::optimize(){
 	return true;
 }
 
-void Relax::dijkstra(Vertex* source){
+void Relax::dijkstra(int source){
 
-	vector<Vertex*> Q;
-	for(auto& v:G.V){
-		v.second.distance = numeric_limits<int>::max();
-		Q.push_back(&v.second);
+	vector<int> Q;
+	for(int i = -1;i < G.VertexNum;i++){
+		G.array_Vertex_distance[i] = numeric_limits<int>::max();
+		Q.push_back(i);
 	}
-	source->distance = 0;
+	G.array_Vertex_distance[source] = 0;
 
-	size_t v_size = G.V.size();
+	size_t v_size = G.VertexNum + 1;
 
 	//set<Vertex*> excluding_set;
-	vector<int> excluding_set(G.V.size(),false);
+	vector<int> excluding_set(v_size,false);
 	
 	for(size_t i = 0;i < v_size - 1;i++){
 		int min_element_pos = -1;
 		int min_value = numeric_limits<int>::max();
 		for(size_t j = i;j < v_size;j++){
-			if(Q[j]->distance < min_value){
-				min_value = Q[j]->distance;
+			if(G.array_Vertex_distance[Q[j]] < min_value){
+				min_value = G.array_Vertex_distance[Q[j]];
 				min_element_pos = j;
 			}
 		}
@@ -156,84 +134,86 @@ void Relax::dijkstra(Vertex* source){
 
 		swap(Q[i],Q[min_element_pos]);
 
-		excluding_set[Q[i]->id + 1] = true;
+		excluding_set[Q[i] + 1] = true;
 
-		Vertex* v = Q[i];
+		int v = Q[i];
 
-		int my_distance = v->distance;
-
-		for(auto e:v->EdgesOut){
-			if(excluding_set[e->to->id + 1] || e->to->id < 0)
+		//for(auto e:v->EdgesOut){
+		for(int j = 0;j < MaxEdgeNum;j ++){
+			int e = G.array_Vertex_EdgesOut[v * MaxEdgeNum + j];
+			int u = G.array_Edge_to[e];
+			if(excluding_set[u + 1] || u < 0)
 			    continue;
-			Vertex* u = e->to;
-			if(e->bandwidth > 0 && e->bandwidth - e->x > 0 
-			    && u->distance > v->distance + e->cost){
-				u->distance = v->distance + e->cost;
-				u->from_edge = e;
+			
+			if(G.array_Edge_bandwidth[e] > 0 && G.array_Edge_bandwidth[e] - G.array_Edge_x[e] > 0 
+			    && G.array_Vertex_distance[u] > G.array_Vertex_distance[v] + G.array_Edge_cost[e]){
+				G.array_Vertex_distance[u] = G.array_Vertex_distance[v] + G.array_Edge_cost[e];
+				G.array_Vertex_from_edge[u] = e;
 			}
 		}
 	}
 }
 
-bool Relax::augment_flow(Vertex* source,Vertex* dest){
+bool Relax::augment_flow(int source,int dest){
 
-	Edge* dest_edge,*source_edge;
+	int dest_edge,source_edge;
 
-	for(auto e:dest->EdgesIn){
-		if(e->from->id == -1){
+	for(int i = 0;i < MaxEdgeNum;i++){
+		int e = G.array_Vertex_EdgesIn[dest * MaxEdgeNum + i];
+		if(G.array_Edge_from[e] == -1){
 			dest_edge = e;
 			break;
 		}
 	}
 
-	for(auto e:source->EdgesIn){
-		if(e->from->id == -1){
+	for(int i = 0;i < MaxEdgeNum;i++){
+		int e = G.array_Vertex_EdgesIn[source * MaxEdgeNum + i];
+		if(G.array_Edge_from[e] == -1){
 			source_edge = e;
 			break;
 		}
 	}
-
 	int min_value = numeric_limits<int>::max();
 	
 
-	Vertex* pVertex = dest;
+	int pVertex = dest;
 
 	int cost = 0;
 
 	while(true){
 		//cout << "id: " << pVertex->id << endl;
-		const Edge *const pE = pVertex->from_edge;
-		cost += pE->cost;
-		if(pE->id > 0)
-	        min_value = min(min_value,pE->bandwidth - pE->x);
+		int e = G.array_Vertex_from_edge[pVertex];
+		cost += G.array_Edge_cost[e];
+		if(G.array_Edge_IsReversEdge[e])
+	        min_value = min(min_value,G.array_Edge_bandwidth[e] - G.array_Edge_x[e]);
 		else
-			min_value = min(min_value,pE->bandwidth);
-		pVertex = pVertex->from_edge->from;
+			min_value = min(min_value,G.array_Edge_bandwidth[e]);
+		pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
 		if(pVertex == source)
 		    break;
 	}
 
-    if(dest->from_edge->id < 0){
+    if(!G.array_Edge_IsReversEdge[G.array_Vertex_from_edge[dest]]){
 		if(cost * min_value < 0){
 			//可以抵消一部分流量
 			//cout << "type1 : source : " << source->id << " dest: " << dest->id << endl;
 			pVertex = dest;
 
-			dest_edge->x -= min_value;
-			source_edge->x += min_value;
+			G.array_Edge_x[dest_edge] -= min_value;
+			G.array_Edge_x[source_edge] += min_value;
 		
 			while(true){
-				Edge *const r = pVertex->from_edge;
+				int r = G.array_Vertex_from_edge[pVertex];
 				//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
-				if(r->id > 0){
-					r->x += min_value;
-					G.E.at(-r->id).bandwidth = r->x;
+				if(G.array_Edge_IsReversEdge[r]){
+					G.array_Edge_x[r] += min_value;
+					G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
 				}
 				else{
-					G.E.at(-r->id).x -= min_value;
-					r->bandwidth = G.E.at(-r->id).x;
+					G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]] -= min_value;
+					G.array_Edge_bandwidth[r] = G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]];
 				}
-				pVertex = pVertex->from_edge->from;
+				pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
 				if(pVertex == source)
 					break;
 			}
@@ -241,27 +221,27 @@ bool Relax::augment_flow(Vertex* source,Vertex* dest){
 		}
 	}
 	else{
-		if(dest_edge->x <= min_value && cost * min_value < G.ServerCost){
+		if(G.array_Edge_x[dest_edge] <= min_value && cost * min_value < G.ServerCost){
 			//cout << "type2 : source : " << source->id << " dest: " << dest->id << endl;
 			//流量可以替代这个服务器
-			min_value = min(min_value,dest_edge->x);
+			min_value = min(min_value,G.array_Edge_x[dest_edge]);
 			pVertex = dest;
-
-			dest_edge->x = 0;
-			source_edge->x += min_value;
+		
+			G.array_Edge_x[dest_edge] = 0;
+			G.array_Edge_x[source_edge] += min_value;
 		
 			while(true){
-				Edge *const r = pVertex->from_edge;
+				int r = G.array_Vertex_from_edge[pVertex];
 				//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
-				if(r->id > 0){
-					r->x += min_value;
-					G.E.at(-r->id).bandwidth = r->x;
+				if(G.array_Edge_IsReversEdge[r]){
+					G.array_Edge_x[r] += min_value;
+					G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
 				}
 				else{
-					G.E.at(-r->id).x -= min_value;
-					r->bandwidth = G.E.at(-r->id).x;
+					G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]] -= min_value;
+					G.array_Edge_bandwidth[r] = G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]];
 				}
-				pVertex = pVertex->from_edge->from;
+				pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
 				if(pVertex == source)
 					break;
 			}
@@ -272,7 +252,8 @@ bool Relax::augment_flow(Vertex* source,Vertex* dest){
 	return false;
 }
 
-bool Relax::reverse_augment_flow(Vertex* source,vector<Vertex*> deficit_set){
+bool Relax::reverse_augment_flow(int source,vector<int> deficit_set){
+	/*
 	vector<pair<Edge*,Edge>> undo;
 	Edge* source_edge;
 
@@ -375,13 +356,12 @@ bool Relax::reverse_augment_flow(Vertex* source,vector<Vertex*> deficit_set){
 		}
 		return false;
 	}
-
-
-
+	*/
 	return false;
 }
 
-void Relax::reverse_dijkstra(Vertex* source){
+void Relax::reverse_dijkstra(int source){
+	/*
 	vector<Vertex*> Q;
 	for(auto& v:G.V){
 		v.second.distance = numeric_limits<int>::max();
@@ -437,19 +417,23 @@ void Relax::reverse_dijkstra(Vertex* source){
 			}
 		}
 	}
+	*/
 }
 
 vector<int> Relax::get_result(){
-	vector<int> ret(G.V.size() - 1,false);
-	Vertex* pesudoSource = &G.V.at(-1);
-	for(auto e:pesudoSource->EdgesOut){
-		if(e->x > 0)//has some flow
-		    ret[e->to->id] = true;
+	vector<int> ret(G.VertexNum,false);
+	
+	//for(auto e:pesudoSource->EdgesOut){
+	for(int i = 0;i < MaxEdgeNum;i++){
+		int e = G.array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
+		if(G.array_Edge_x[e] > 0)//has some flow
+		    ret[G.array_Edge_to[e]] = true;
 	}
 	return ret;
 }
 
 vector<int> Relax::postOptimize(){
+	/*
 	cout << "starting postOptimize" << endl;
 	Vertex* pesudoSource = &G.V.at(-1);
 	vector<int> ret;
@@ -468,6 +452,7 @@ vector<int> Relax::postOptimize(){
 		}//if
 	}
 	return ret;
+	*/
 }
 
 void Relax::save_topo(){

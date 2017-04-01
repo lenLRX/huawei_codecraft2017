@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include "data_structures.h"
 #include "parse.h"
-
+#include "Relax.h"
 /*
 #include "SSPA2.h"
-#include "Relax.h"
+
 #include "Firefly.h"
 */
 #include "Timer.h"
@@ -35,11 +35,14 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	Timer::getInstance().start();
 	//Timer::getInstance().set(80);
 	Timer::getInstance().set(88500);
-	Graph G = parse(topo,line_num);
+	Graph G;
+	parse(topo,line_num,G);
+	G.save();
 
-    /*
+    
 	Relax init_optimizer(G);
 	init_optimizer.optimize();
+	/*
 	SSPA2 optimizer(G);
 
 	FireflySolver solver(optimizer,20,0.001,1,G.V.size());

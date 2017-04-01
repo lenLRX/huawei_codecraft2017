@@ -1,8 +1,6 @@
 #include "optimizer.h"
 
 void Optimizer::create_pesudo_source(unordered_set<int> IncludingVertex){
-	int pesudo_source_id = -1;
-
 	int sum = 0;
 
 	for(int i = 0;i < G.VertexNum;i++){
@@ -10,7 +8,7 @@ void Optimizer::create_pesudo_source(unordered_set<int> IncludingVertex){
 		//cout << pv.first << " : " << pv.second.d << endl;
 		if(IncludingVertex.count(i) == 0)
 		    continue;
-		//cout << pv.first << endl;
+		//cout << "to" << i << endl;
 		G.add_Edge(-1,i,numeric_limits<int>::max(),0);
 		//cout << "e.id " << e.id << endl;
 	}
@@ -30,7 +28,7 @@ void Optimizer::check(){
 			int e = G.array_Vertex_EdgesIn[i * MaxEdgeNum + j];
 			if(e < 0)
 			    break;
-			if(G.array_Edge_ResidualEdgeNo[e] >=0)
+			if(G.array_Edge_IsReversEdge[e])
 				sum += G.array_Edge_x[e];
 		}
 
@@ -38,7 +36,7 @@ void Optimizer::check(){
 			int e = G.array_Vertex_EdgesOut[i * MaxEdgeNum + j];
 			if(e < 0)
 			    break;
-			if(G.array_Edge_ResidualEdgeNo[e] >=0)
+			if(G.array_Edge_IsReversEdge[e])
 				sum -= G.array_Edge_x[e];
 		}
 

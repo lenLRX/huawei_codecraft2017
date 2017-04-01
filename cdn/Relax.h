@@ -9,10 +9,10 @@ public:
     Relax(Graph& G):Optimizer(G){}
     virtual bool optimize();
 	void save_topo();
-	void dijkstra(Vertex* source);
-	bool augment_flow(Vertex* source,Vertex* dest);
-	void reverse_dijkstra(Vertex* source);
-	bool reverse_augment_flow(Vertex* source,vector<Vertex*> deficit_set);
+	void dijkstra(int source);
+	bool augment_flow(int source,int dest);
+	void reverse_dijkstra(int source);
+	bool reverse_augment_flow(int source,vector<int> deficit_set);
 	vector<int> get_result();
 
 	vector<int> postOptimize();

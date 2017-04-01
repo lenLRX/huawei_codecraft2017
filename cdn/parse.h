@@ -25,8 +25,7 @@ void parse_first_line(Graph& G,char* line){
 	//G.C.reserve(G.ConsumerNum);
 }
 
-Graph parse(char* graph[MAX_EDGE_NUM], int line_num){
-	Graph G;
+void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 	int i = 0;
 
 	parse_first_line(G,graph[0]);
@@ -65,8 +64,6 @@ Graph parse(char* graph[MAX_EDGE_NUM], int line_num){
 
 		G.add_Consumer(ConsumerID,fromID,requirement);
 	}
-
-	return G;
 }
 
 #endif//__PARSE_H__
