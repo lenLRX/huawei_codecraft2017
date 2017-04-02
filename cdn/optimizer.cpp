@@ -41,13 +41,14 @@ void Optimizer::check(){
 		}
 
 		if(sum != 0){
-			cout << "ID : " << i << " Vertex sum " << sum << endl;
+			//cout << "ID : " << i << " Vertex sum " << sum << endl;
 		}
 
 		if(G.array_Vertex_d[i] !=0 )
 			cout << "d: " << G.array_Vertex_d[i] << endl;
 		
-		if(G.array_Vertex_d[i] + sum != 0){
+		if(G.array_Vertex_consumer_id[i] > 0 &&
+		    G.array_Consumer_requirement[G.array_Vertex_consumer_id[i]] - sum != 0){
 			cout << "ID : " << i << "unbalanced" << endl;
 		}
 	}

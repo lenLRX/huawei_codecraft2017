@@ -45,6 +45,13 @@ bool SSPA2::optimize(){
 			}
 		}
 	}
+
+	check();
+
+	for(int i = -1;i < G.VertexNum;i++){
+		if(G.array_Vertex_d[i] != 0)
+		    cout << "error! " << i << " not balanced" << endl;
+	}
 	        
 	return true;
 }

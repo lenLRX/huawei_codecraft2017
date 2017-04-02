@@ -395,11 +395,13 @@ public:
 		}
 	}
 
+
 	int total_cost(){
 		int sum = 0;
-		for(int i = 0;i < EdgeNum;i++){
-			if(array_Edge_from[i] > 0 && array_Edge_ResidualEdgeNo[i] > 0){// not pesudo source
-			    sum += array_Edge_cost[i] * array_Edge_x[i];
+		int total_edge_num = (MaxVertexNum + 1) * MaxEdgeNum;
+		for(int i = 0;i < total_edge_num;i++){
+			if(!raw_array_Edge_IsReversEdge[i]){// not pesudo source
+			    sum += raw_array_Edge_cost[i] * raw_array_Edge_x[i];
 			}
 		}
 
@@ -412,14 +414,15 @@ public:
 		return sum;
 	}
 
+
 	string to_String(){
 		vector<list<int>> result;
 		map<int,int> real_source;
 		//for(auto pesudo_source_out:V.at(-1).EdgesOut){
 		for(int i = 0;i < MaxEdgeNum;i++){
-			if(array_Edge_x[array_Vertex_EdgesOut[-1 * MaxEdgeNum]] > 0){//has some flow
-			    real_source[array_Edge_to[array_Vertex_EdgesOut[-1 * MaxEdgeNum]]] 
-				    = array_Edge_x[array_Vertex_EdgesOut[-1 * MaxEdgeNum]];
+			if(array_Edge_x[array_Vertex_EdgesOut[-1 * MaxEdgeNum + i]] > 0){//has some flow
+			    real_source[array_Edge_to[array_Vertex_EdgesOut[-1 * MaxEdgeNum + i]]] 
+				    = array_Edge_x[array_Vertex_EdgesOut[-1 * MaxEdgeNum + i]];
 #ifdef LEN_DBG
 				cout << "pesudo_source_out => " << pesudo_source_out->to->id << "  " << pesudo_source_out->x << endl;
 #endif
@@ -453,13 +456,82 @@ public:
 			    ret += newline;
 		}
 
-		memcpy(array_Consumer_fromVertex,backup_array_Consumer_fromVertex,sizeof(int) * (MaxConsumerNum + 1));
-		memcpy(array_Consumer_requirement,backup_array_Consumer_requirement,sizeof(int) * (MaxConsumerNum + 1));
-		memcpy(array_Consumer_remaining_requirement,backup_array_Consumer_remaining_requirement,sizeof(int) * (MaxConsumerNum + 1));
+		memcpy(array_Consumer_fromVertex,backup_array_Consumer_fromVertex,sizeof(int) * MaxConsumerNum);
+		memcpy(array_Consumer_requirement,backup_array_Consumer_requirement,sizeof(int) * MaxConsumerNum);
+		memcpy(array_Consumer_remaining_requirement,backup_array_Consumer_remaining_requirement,sizeof(int) * MaxConsumerNum);
 
 		return ret;
 	}
 
+
+	void cost_start_from_source(vector<int>& result,int path_cost,int node,int flow){
+		int comsumer_id = array_Vertex_consumer_id[node];
+		if(comsumer_id >= 0){
+			
+			int remaining_requirement = array_Consumer_remaining_requirement[comsumer_id];
+			if(flow > remaining_requirement){
+				result.push_back(path_cost * remaining_requirement);
+				flow -= remaining_requirement;
+				array_Consumer_remaining_requirement[comsumer_id] = 0;
+			}
+			else{
+				result.push_back(path_cost * flow);
+				array_Consumer_remaining_requirement[comsumer_id] -= flow;
+				flow = 0;
+			}
+			    
+		}
+		
+		//for(auto e:node->EdgesOut){
+		for(int i = 0;i < MaxEdgeNum;i++){
+			int edge = array_Vertex_EdgesOut[node * MaxEdgeNum + i];
+			if(edge < 0)
+			    break;//end of EdgesOut
+			if(flow <= 0)
+		        return;
+			if(array_Edge_x[edge] > 0 && 
+			array_Edge_visited[edge] < array_Edge_x[edge]){//还有空余带宽
+			    int next_flow;
+				if(flow > array_Edge_x[edge] - array_Edge_visited[edge])
+				    next_flow = array_Edge_x[edge] - array_Edge_visited[edge];
+				else
+				    next_flow = flow;
+				flow -= next_flow;//减去被分流的部
+				array_Edge_visited[edge] += next_flow;
+				int next_node = array_Edge_to[edge];
+				path_cost += array_Edge_cost[edge];
+				cost_start_from_source(result,path_cost,next_node,next_flow);
+			}
+		}
+	}
+/*
+	int total_cost(){
+		int cost = 0;
+		vector<int> result;
+		map<int,int> real_source;
+		//for(auto pesudo_source_out:V.at(-1).EdgesOut){
+		for(int i = 0;i < MaxEdgeNum;i++){
+			if(array_Edge_x[array_Vertex_EdgesOut[-1 * MaxEdgeNum + i]] > 0){//has some flow
+			    real_source[array_Edge_to[array_Vertex_EdgesOut[-1 * MaxEdgeNum + i]]] 
+				    = array_Edge_x[array_Vertex_EdgesOut[-1 * MaxEdgeNum + i]];
+			}
+		}
+
+		for(auto p : real_source){
+			cost += ServerCost;
+			cost_start_from_source(result,0,p.first,p.second);
+		}
+
+		for(int path_cost:result){
+			cost += path_cost;
+		}
+
+		memcpy(array_Consumer_fromVertex,backup_array_Consumer_fromVertex,sizeof(int) * (MaxConsumerNum + 1));
+		memcpy(array_Consumer_requirement,backup_array_Consumer_requirement,sizeof(int) * (MaxConsumerNum + 1));
+		memcpy(array_Consumer_remaining_requirement,backup_array_Consumer_remaining_requirement,sizeof(int) * (MaxConsumerNum + 1));
+		return cost;
+	}
+*/
 	int EdgeNum;
 	int VertexNum;
 	int ConsumerNum;
