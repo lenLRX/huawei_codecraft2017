@@ -52,13 +52,13 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 	}
 
 	lr.create_pesudo_source(includeing_set);
-	bool b = lr.optimize();
-	if(b)
-	    fly.objective = lr.G.total_cost();
+	int b = lr.optimize();
+	if(b > 0)
+	    fly.objective = b;
 	else//invalid
 	    fly.objective = numeric_limits<int>::max();
 	
-	if(b){
+	if(b > 0){
 		for(int i = 0;i < MaxEdgeNum;i++){
 			int e = lr.G.array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
 			if(e < 0)
@@ -82,7 +82,8 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 		     << GlobalMin << " ServerNum " 
 			 << minServerNum << " position: "
 			 << i << endl;
-		result = lr.G.to_String();
+		//result = lr.G.to_String();//slow
+		lr.G.save_globalmin();
 		//cout << result << endl;
 		ret = true;
 	}

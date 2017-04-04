@@ -68,7 +68,8 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	*/
 	
 	cout << "visited size " << solver.tabu.size() << " " << optimizer.counter << endl;
-	write_result(solver.result.c_str(), filename);
+	G.restore_globalmin();
+	write_result(G.to_String().c_str(), filename);
 	//write_result(G.to_String().c_str(),filename);
 }
 

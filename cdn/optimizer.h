@@ -12,7 +12,7 @@ class Optimizer{
 public:
     Optimizer(Graph& G):G(G){}
     Graph& G;
-    virtual bool optimize() = 0;
+    virtual int optimize() = 0;
 
 	void create_pesudo_source(unordered_set<int> 
 	    includingVertex = unordered_set<int>());

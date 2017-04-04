@@ -7,7 +7,7 @@ class Relax:public Optimizer
 {
 public:
     Relax(Graph& G):Optimizer(G){}
-    virtual bool optimize();
+    virtual int optimize();
 	void save_topo();
 	void dijkstra(int source);
 	bool augment_flow(int source,int dest);

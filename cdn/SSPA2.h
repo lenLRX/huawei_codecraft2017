@@ -6,10 +6,10 @@
 class SSPA2:public Optimizer{
 public:
 	SSPA2(Graph& G):Optimizer(G){}
-	virtual bool optimize();
+	virtual int optimize();
 
 	void dijkstra(int source);
-	void augment_flow(int dest);
+	int augment_flow(int dest);
 	int counter = 0;
 };
 

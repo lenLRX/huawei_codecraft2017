@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <string>
 
-bool Relax::optimize(){
+int Relax::optimize(){
 
 	G.restore();
 
@@ -108,7 +108,7 @@ bool Relax::optimize(){
 void Relax::dijkstra(int source){
 
 	vector<int> Q;
-	for(int i = -1;i < G.VertexNum;i++){
+	for(int i = -1;i < G.VertexNum + 1;i++){
 		G.array_Vertex_distance[i] = numeric_limits<int>::max();
 		Q.push_back(i);
 	}
