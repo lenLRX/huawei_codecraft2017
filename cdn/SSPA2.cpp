@@ -49,7 +49,7 @@ int SSPA2::optimize(){
 	for(int i = 0;i < MaxEdgeNum;i++){
 		int e = G.array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
 		if(G.array_Edge_x[e] > 0)
-		    local_cost += G.ServerCost;
+		    local_cost += G.get_ServerCost(G.array_Edge_to[e],G.array_Edge_x[e]);
 	}
 	return local_cost;
 }

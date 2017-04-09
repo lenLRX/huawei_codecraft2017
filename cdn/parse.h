@@ -35,7 +35,7 @@ void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 		string line(graph[i]);
 		stringstream ss(line);
 		string s;
-		if(s.length() < 3)
+		if(line.length() < 3)
 		    break;
 		ss >> s;
 		int lvl_id = stoi(s);
@@ -52,7 +52,7 @@ void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 		string line(graph[i]);
 		stringstream ss(line);
 		string s;
-		if(s.length() < 2)
+		if(line.length() < 3)
 		    break;
 		ss >> s;
 		int id = stoi(s);
@@ -66,7 +66,7 @@ void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 		string line(graph[i]);
 		stringstream ss(line);
 		string s;
-		if(s.length() < 4)
+		if(line.length() < 4)
 		    break;
 		ss >> s;
 		int from = stoi(s);

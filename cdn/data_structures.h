@@ -14,9 +14,9 @@
 
 //#define LEN_DBG
 
-const int MaxEdgeNum = 10000 * 2 + 1;//21 * 2;//reverse edge
-const int MaxVertexNum = 10000;//+1 for pesudo vertex
-const int MaxConsumerNum = 10000;
+const int MaxEdgeNum = 1000 * 2 + 1;//21 * 2;//reverse edge
+const int MaxVertexNum = 1000;//+1 for pesudo vertex
+const int MaxConsumerNum = 1000;
 const int MaxServerLvlNum = 10;
 
 using namespace std;
@@ -450,7 +450,7 @@ public:
 		return i_counter++;
 	}
 
-	void start_from_source(vector<list<int>>& result,list<int> path,int node,int flow){
+	void start_from_source(vector<list<int>>& result,list<int> path,int node,int flow,int ServerLvl){
 		int comsumer_id = array_Vertex_consumer_id[node];
 		if(comsumer_id >= 0){
 			result.push_back(path);
@@ -466,7 +466,7 @@ public:
 				array_Consumer_remaining_requirement[comsumer_id] -= flow;
 				flow = 0;
 			}
-			    
+			result.back().push_back(ServerLvl);
 		}
 		
 		//for(auto e:node->EdgesOut){
@@ -499,7 +499,7 @@ public:
 #ifdef LEN_DBG
 				cout << " next node: " << next_node.id << " next_flow " << next_flow << endl;
 #endif
-				start_from_source(result,_path_copy,next_node,next_flow);
+				start_from_source(result,_path_copy,next_node,next_flow,ServerLvl);
 			}
 		}
 	}
@@ -518,13 +518,17 @@ public:
 		for(int i = 0;i < MaxEdgeNum;i++){
 			int e = array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
 			if(array_Edge_x[e] > 0)
-			    sum += (const_array_Server_Cost[get_suitable_Server(array_Edge_x[e])] 
-				    + const_array_Vertex_Server_Cost[array_Edge_to[e]]);
+			    sum += get_ServerCost(array_Edge_to[e],array_Edge_x[e]);
 		}
 		return sum;
 	}
 
-	int get_suitable_Server(int demand){
+	inline int get_ServerCost(int v,int demand){
+		return const_array_Server_Cost[get_suitable_Server(demand)] 
+		    + const_array_Vertex_Server_Cost[array_Edge_to[v]];
+	}
+
+	inline int get_suitable_Server(int demand){
 		for(int i = 0;i < ServerLvlNum;i++){
 			if(const_array_Server_Ability[i] >= demand){
 				return i;
@@ -551,7 +555,7 @@ public:
 		for(auto p : real_source){
 			list<int> line;
 			line.push_back(p.first);
-			start_from_source(result,line,p.first,p.second);
+			start_from_source(result,line,p.first,p.second,get_suitable_Server(p.second));
 		}
 		string newline = "\n";
 		string ret;

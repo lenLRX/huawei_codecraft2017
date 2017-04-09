@@ -224,31 +224,33 @@ bool Relax::augment_flow(int source,int dest){
 		}
 	}
 	else*/{
-		if(G.array_Edge_x[dest_edge] <= min_value && cost * min_value < G.ServerCost){
-			//cout << "type2 : source : " << source->id << " dest: " << dest->id << endl;
-			//流量可以替代这个服务器
-			min_value = min(min_value,G.array_Edge_x[dest_edge]);
-			pVertex = dest;
-		
-			G.array_Edge_x[dest_edge] = 0;
-			G.array_Edge_x[source_edge] += min_value;
-		
-			while(true){
-				int r = G.array_Vertex_from_edge[pVertex];
-				//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
-				if(!G.array_Edge_IsReversEdge[r]){
-					G.array_Edge_x[r] += min_value;
-					G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
+		if(G.array_Edge_x[dest_edge] <= min_value){
+				min_value = min(min_value,G.array_Edge_x[dest_edge]);
+				if(cost * min_value < G.get_ServerCost(dest,min_value)){
+				//cout << "type2 : source : " << source->id << " dest: " << dest->id << endl;
+				//流量可以替代这个服务器
+				pVertex = dest;
+			
+				G.array_Edge_x[dest_edge] = 0;
+				G.array_Edge_x[source_edge] += min_value;
+			
+				while(true){
+					int r = G.array_Vertex_from_edge[pVertex];
+					//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
+					if(!G.array_Edge_IsReversEdge[r]){
+						G.array_Edge_x[r] += min_value;
+						G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
+					}
+					else{
+						G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]] -= min_value;
+						G.array_Edge_bandwidth[r] = G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]];
+					}
+					pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
+					if(pVertex == source)
+						break;
 				}
-				else{
-					G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]] -= min_value;
-					G.array_Edge_bandwidth[r] = G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]];
-				}
-				pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
-				if(pVertex == source)
-					break;
+				return true;
 			}
-			return true;
 		}
 	}
 	
