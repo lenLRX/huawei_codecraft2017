@@ -75,9 +75,9 @@ void SSPA2::dijkstra(int source){
 
 		excluding_set[v + 1] = true;
 
-		//for(auto e:v->EdgesOut){
+		int pre_calc = v * MaxEdgeNum;
 		for(int j = 0;j < MaxEdgeNum;j ++){
-			int e = G.array_Vertex_EdgesOut[v * MaxEdgeNum + j];
+			int e = G.array_Vertex_EdgesOut[pre_calc + j];
 			if(e < 0)
 			    break;
 			int u = G.array_Edge_to[e];

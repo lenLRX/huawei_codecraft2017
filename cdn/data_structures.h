@@ -92,7 +92,7 @@ public:
 class Graph
 {
 public:
-    Graph():i_counter(0){
+    Graph():i_counter(0),ServerLvlNum(0){
 		const_array_Vertex_Server_Cost = new int[MaxVertexNum];
 		const_array_Server_Ability = new int[MaxServerLvlNum];
 		const_array_Server_Cost = new int[MaxServerLvlNum];
