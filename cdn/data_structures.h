@@ -14,9 +14,10 @@
 
 //#define LEN_DBG
 
-const int MaxEdgeNum = 500;//21 * 2;//reverse edge
-const int MaxVertexNum = 1000;//+1 for pesudo vertex
-const int MaxConsumerNum = 500;
+const int MaxEdgeNum = 10000 * 2 + 1;//21 * 2;//reverse edge
+const int MaxVertexNum = 10000;//+1 for pesudo vertex
+const int MaxConsumerNum = 10000;
+const int MaxServerLvlNum = 10;
 
 using namespace std;
 
@@ -92,6 +93,10 @@ class Graph
 {
 public:
     Graph():i_counter(0){
+		const_array_Vertex_Server_Cost = new int[MaxVertexNum];
+		const_array_Server_Ability = new int[MaxServerLvlNum];
+		const_array_Server_Cost = new int[MaxServerLvlNum];
+
 		raw_array_Vertex_d = new int[MaxVertexNum + 1];
 		raw_array_Vertex_consumer_id = new int[MaxVertexNum + 1];
 		raw_array_Vertex_EdgesOut = new int[(MaxVertexNum + 1) * MaxEdgeNum];
@@ -230,6 +235,10 @@ public:
 	}
 
 	~Graph(){
+		delete[] const_array_Vertex_Server_Cost;
+		delete[] const_array_Server_Ability;
+		delete[] const_array_Server_Cost;
+
 		delete[] raw_array_Vertex_d;
 		delete[] raw_array_Vertex_consumer_id;
 		delete[] raw_array_Vertex_EdgesOut;
@@ -509,11 +518,21 @@ public:
 		for(int i = 0;i < MaxEdgeNum;i++){
 			int e = array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
 			if(array_Edge_x[e] > 0)
-			    sum += ServerCost;
+			    sum += (const_array_Server_Cost[get_suitable_Server(array_Edge_x[e])] 
+				    + const_array_Vertex_Server_Cost[array_Edge_to[e]]);
 		}
 		return sum;
 	}
 
+	int get_suitable_Server(int demand){
+		for(int i = 0;i < ServerLvlNum;i++){
+			if(const_array_Server_Ability[i] >= demand){
+				return i;
+			}
+		}
+		throw "error";
+		return -1;
+	}
 
 	string to_String(){
 		vector<list<int>> result;
@@ -635,7 +654,11 @@ public:
 	int EdgeNum;
 	int VertexNum;
 	int ConsumerNum;
-	int ServerCost;
+	int ServerLvlNum;
+
+	int* const_array_Vertex_Server_Cost;
+	int* const_array_Server_Cost;
+	int* const_array_Server_Ability;
 
 
     int* array_Vertex_d;
@@ -644,6 +667,7 @@ public:
 	int* array_Vertex_EdgesIn;
 	int* array_Vertex_distance;
 	int* array_Vertex_from_edge;
+	
 
 	int* raw_array_Vertex_d;
 	int* raw_array_Vertex_consumer_id;
