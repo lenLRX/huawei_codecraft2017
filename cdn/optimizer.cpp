@@ -1,7 +1,14 @@
 #include "optimizer.h"
+#include <algorithm>
 
 void Optimizer::create_pesudo_source(unordered_set<int> IncludingVertex){
 	int sum = 0;
+
+	int max_ability = 0;
+
+	for(int i = 0;i < G.ServerLvlNum;i++){
+		max_ability = max(max_ability,G.const_array_Server_Ability[i]);
+	}
 
 	for(int i = 0;i < G.VertexNum;i++){
 		sum += G.array_Vertex_d[i];
@@ -9,7 +16,7 @@ void Optimizer::create_pesudo_source(unordered_set<int> IncludingVertex){
 		if(IncludingVertex.count(i) == 0)
 		    continue;
 		//cout << "to" << i << endl;
-		G.add_Edge(-1,i,numeric_limits<int>::max(),0);
+		G.add_Edge(-1,i,max_ability,0);
 		//cout << "e.id " << e.id << endl;
 	}
 

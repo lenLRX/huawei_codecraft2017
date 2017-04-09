@@ -29,15 +29,45 @@ void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 	int i = 0;
 
 	parse_first_line(G,graph[0]);
-	string tmp(graph[2]);
-	stringstream ss(tmp);
-	G.ServerCost = GetNextInt(ss);
-	int halfp = G.EdgeNum / 2 + 4;
-	cout << halfp << endl;
-	for(i = 4;i < halfp;i++){
+	i = 2;
+
+	for(;;i++){
 		string line(graph[i]);
 		stringstream ss(line);
 		string s;
+		if(s.length() < 3)
+		    break;
+		ss >> s;
+		int lvl_id = stoi(s);
+		G.ServerLvlNum++;
+		ss >> s;
+		G.const_array_Server_Ability[lvl_id] = stoi(s);
+		ss >> s;
+		G.const_array_Server_Cost[lvl_id] = stoi(s);
+	}
+
+	i++;
+
+	for(;;i++){
+		string line(graph[i]);
+		stringstream ss(line);
+		string s;
+		if(s.length() < 2)
+		    break;
+		ss >> s;
+		int id = stoi(s);
+		ss >> s;
+		G.const_array_Vertex_Server_Cost[id] = stoi(s);
+	}
+
+	i++;
+
+	for(;;i++){
+		string line(graph[i]);
+		stringstream ss(line);
+		string s;
+		if(s.length() < 4)
+		    break;
 		ss >> s;
 		int from = stoi(s);
 		ss >> s;
@@ -51,7 +81,9 @@ void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 		G.add_Edge(to,from,bandwidth,cost);
 	}
 
-	for(i = halfp + 1;i < line_num;i++){
+	i++;
+
+	for(;i < line_num;i++){
 		string line(graph[i]);
 		stringstream ss(line);
 		string s;
