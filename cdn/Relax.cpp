@@ -43,6 +43,7 @@ int Relax::optimize(){
 				return G.array_Vertex_distance[lhs] > G.array_Vertex_distance[rhs];
 			});
 			b = false;
+			id = 0;
 		}
 
 		b_vertex = false;

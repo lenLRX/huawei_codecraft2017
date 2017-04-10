@@ -14,7 +14,7 @@
 
 //#define LEN_DBG
 
-const int MaxEdgeNum = 1000 * 2 + 1;//21 * 2;//reverse edge
+const int MaxEdgeNum = 400;//21 * 2;//reverse edge
 const int MaxVertexNum = 1000;//+1 for pesudo vertex
 const int MaxConsumerNum = 1000;
 const int MaxServerLvlNum = 10;
