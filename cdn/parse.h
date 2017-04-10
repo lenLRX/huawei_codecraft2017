@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <string>
+#include <cassert>
 
 #include "data_structures.h"
 #include "lib_io.h"
@@ -27,9 +28,90 @@ void parse_first_line(Graph& G,char* line){
 
 void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 	int i = 0;
+	//1st pass
+	parse_first_line(G,graph[0]);
+
+	G.raw_array_Vertex2Edge_len = new int[G.VertexNum + 1];
+	G.raw_array_Vertex2Edge_offset = new int[G.VertexNum + 1];
+
+	G.array_Vertex2Edge_len = G.raw_array_Vertex2Edge_len + 1;
+	G.array_Vertex2Edge_offset = G.raw_array_Vertex2Edge_offset + 1;
+
+	i = 2;
+
+	for(;;i++){
+		string line(graph[i]);
+		stringstream ss(line);
+		string s;
+		if(line.length() < 3)
+		    break;
+	}
+
+	i++;
+
+	for(;;i++){
+		string line(graph[i]);
+		stringstream ss(line);
+		string s;
+		if(line.length() < 3)
+		    break;
+	}
+
+	i++;
+
+	vector<int> EdgeCounter(G.VertexNum,0);
+
+	for(;;i++){
+		string line(graph[i]);
+		stringstream ss(line);
+		string s;
+		if(line.length() < 4)
+		    break;
+		ss >> s;
+		int from = stoi(s);
+		ss >> s;
+		int to = stoi(s);
+		ss >> s;
+		int bandwidth = stoi(s);
+		ss >> s;
+		int cost = stoi(s);
+		EdgeCounter[from]++;
+		EdgeCounter[to]++;
+	}
+
+	G.array_Vertex2Edge_len[-1] = G.VertexNum;
+	G.array_Vertex2Edge_offset[-1] = 0;
+
+	for(int i = 0;i < G.VertexNum;i++){
+		G.array_Vertex2Edge_len[i] = (EdgeCounter[i] + 1) * 2;
+		G.array_Vertex2Edge_offset[i] = 
+		    G.array_Vertex2Edge_offset[i - 1] + G.array_Vertex2Edge_len[i - 1];
+	}
+
+
+
+    //2nd pass
+	i = 0;
 
 	parse_first_line(G,graph[0]);
 	i = 2;
+
+	G.mem.init(G.VertexNum + 1,
+	    G.EdgeNum * 2 + G.VertexNum * 2 + G.VertexNum * 2,
+		G.ConsumerNum);
+	
+	cout << G.EdgeNum * 2 + G.VertexNum * 2 + G.VertexNum * 2
+	<< " <=> " << G.array_Vertex2Edge_offset[G.VertexNum - 1] << endl;
+
+	G.init(G.mem);
+	
+	G.backup_mem.init(G.VertexNum + 1,
+	    G.EdgeNum * 2 + G.VertexNum * 2 + G.VertexNum * 2,
+		G.ConsumerNum);
+	
+	G.global_min_mem.init(G.VertexNum + 1,
+	    G.EdgeNum * 2 + G.VertexNum * 2 + G.VertexNum * 2,
+		G.ConsumerNum);
 
 	for(;;i++){
 		string line(graph[i]);

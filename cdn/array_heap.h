@@ -36,8 +36,8 @@ public:
 	void decrease_key(int key) {
 		int i = arr_idx[key];
 		while (i > 0) {
-			if (G.array_Vertex_distance[array[parent(i)]] 
-			    > G.array_Vertex_distance[array[i]]) {
+			if (G.mem.array_Vertex_distance[array[parent(i)]] 
+			    > G.mem.array_Vertex_distance[array[i]]) {
 				swap_with_parent(i);
 				i = parent(i);
 			} else {
@@ -67,13 +67,13 @@ public:
 			int m = i;
 
 			if (l < n && 
-			    G.array_Vertex_distance[array[l]] 
-				< G.array_Vertex_distance[array[m]]) {
+			    G.mem.array_Vertex_distance[array[l]] 
+				< G.mem.array_Vertex_distance[array[m]]) {
 				m = l;
 			}
 
-			if (r < n && G.array_Vertex_distance[array[r]]
-			 < G.array_Vertex_distance[array[m]]) {
+			if (r < n && G.mem.array_Vertex_distance[array[r]]
+			 < G.mem.array_Vertex_distance[array[m]]) {
 				m = r;
 			}
 

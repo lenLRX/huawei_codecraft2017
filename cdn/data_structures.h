@@ -11,6 +11,7 @@
 #include <list>
 #include <cstdlib>
 #include <cstring>
+#include <cassert>
 
 //#define LEN_DBG
 
@@ -87,158 +88,81 @@ public:
 	Edge(){}
 };
 
-
-
-class Graph
-{
+class GraphMemory{
 public:
-    Graph():i_counter(0),ServerLvlNum(0){
-		const_array_Vertex_Server_Cost = new int[MaxVertexNum];
-		const_array_Server_Ability = new int[MaxServerLvlNum];
-		const_array_Server_Cost = new int[MaxServerLvlNum];
+    void init(int VertexNum,int TotalEdgeNum,int ConsumerNum){
 
-		raw_array_Vertex_d = new int[MaxVertexNum + 1];
-		raw_array_Vertex_consumer_id = new int[MaxVertexNum + 1];
-		raw_array_Vertex_EdgesOut = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_array_Vertex_EdgesIn = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_array_Vertex_distance = new int[MaxVertexNum + 1];
-		raw_array_Vertex_from_edge = new int[MaxVertexNum + 1];
+		VNum = VertexNum;
+		ENum = TotalEdgeNum;
+		CNum = ConsumerNum;
 
+		raw_array_Vertex_d = new int[VNum];
+		raw_array_Vertex_consumer_id = new int[VNum];
+		raw_array_Vertex_EdgesOut = new int[ENum];
+		raw_array_Vertex_EdgesIn = new int[ENum];
+		raw_array_Vertex_distance = new int[VNum];
+		raw_array_Vertex_from_edge = new int[VNum];
 
 		array_Vertex_d = raw_array_Vertex_d + 1;
 		array_Vertex_consumer_id = raw_array_Vertex_consumer_id + 1;
-		array_Vertex_EdgesOut = raw_array_Vertex_EdgesOut + MaxEdgeNum;
-		array_Vertex_EdgesIn = raw_array_Vertex_EdgesIn + MaxEdgeNum;
+		array_Vertex_EdgesOut = raw_array_Vertex_EdgesOut;
+		array_Vertex_EdgesIn = raw_array_Vertex_EdgesIn;
 		array_Vertex_distance = raw_array_Vertex_distance + 1;
 		array_Vertex_from_edge = raw_array_Vertex_from_edge + 1;
 
-		array_Consumer_fromVertex = new int[MaxConsumerNum];
-	    array_Consumer_requirement = new int[MaxConsumerNum];
-		array_Consumer_remaining_requirement = new int[MaxConsumerNum];
+		array_Consumer_fromVertex = new int[CNum];
+		array_Consumer_requirement = new int[CNum];
+		array_Consumer_remaining_requirement = new int[CNum];
 
-		raw_array_Edge_from = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_array_Edge_to = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_array_Edge_bandwidth = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_array_Edge_cost = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_array_Edge_x = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-	    raw_array_Edge_visited = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_array_Edge_ResidualEdgeNo = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_array_Edge_IsReversEdge = new int[(MaxVertexNum + 1) * MaxEdgeNum];
+		raw_array_Edge_from = new int[ENum];
+		raw_array_Edge_to = new int[ENum];
+		raw_array_Edge_bandwidth = new int[ENum];
+		raw_array_Edge_cost = new int[ENum];
+		raw_array_Edge_x = new int[ENum];
+		raw_array_Edge_visited = new int[ENum];
+		raw_array_Edge_ResidualEdgeNo = new int[ENum];
+		raw_array_Edge_IsReversEdge = new int[ENum];
 
-		array_Edge_from = raw_array_Edge_from + MaxEdgeNum;
-		array_Edge_to = raw_array_Edge_to + MaxEdgeNum;
-		array_Edge_bandwidth = raw_array_Edge_bandwidth + MaxEdgeNum;
-		array_Edge_cost = raw_array_Edge_cost + MaxEdgeNum;
-		array_Edge_x = raw_array_Edge_x + MaxEdgeNum;
-	    array_Edge_visited = raw_array_Edge_visited + MaxEdgeNum;
-		array_Edge_ResidualEdgeNo = raw_array_Edge_ResidualEdgeNo + MaxEdgeNum;
-		array_Edge_IsReversEdge = raw_array_Edge_IsReversEdge + MaxEdgeNum;
+		array_Edge_from = raw_array_Edge_from;
+		array_Edge_to = raw_array_Edge_to;
+		array_Edge_bandwidth = raw_array_Edge_bandwidth;
+		array_Edge_cost = raw_array_Edge_cost;
+		array_Edge_x = raw_array_Edge_x;
+		array_Edge_visited = raw_array_Edge_visited;
+		array_Edge_ResidualEdgeNo = raw_array_Edge_ResidualEdgeNo;
+		array_Edge_IsReversEdge = raw_array_Edge_IsReversEdge;
 
-
-		backup_raw_array_Vertex_d = new int[MaxVertexNum + 1];
-		backup_raw_array_Vertex_consumer_id = new int[MaxVertexNum + 1];
-		backup_raw_array_Vertex_EdgesOut = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		backup_raw_array_Vertex_EdgesIn = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		backup_raw_array_Vertex_distance = new int[MaxVertexNum + 1];
-		backup_raw_array_Vertex_from_edge = new int[MaxVertexNum + 1];
-
-
-		backup_array_Consumer_fromVertex = new int[MaxConsumerNum];
-		backup_array_Consumer_requirement = new int[MaxConsumerNum];
-		backup_array_Consumer_remaining_requirement = new int[MaxConsumerNum];
-
-
-		backup_raw_array_Edge_from = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		backup_raw_array_Edge_to = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		backup_raw_array_Edge_bandwidth = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		backup_raw_array_Edge_cost = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		backup_raw_array_Edge_x = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-	    backup_raw_array_Edge_visited = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		backup_raw_array_Edge_ResidualEdgeNo = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		backup_raw_array_Edge_IsReversEdge = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-
-		backup_array_Edge_from = raw_array_Edge_from + MaxEdgeNum;
-		backup_array_Edge_to = raw_array_Edge_to + MaxEdgeNum;
-		backup_array_Edge_bandwidth = raw_array_Edge_bandwidth + MaxEdgeNum;
-		backup_array_Edge_cost = raw_array_Edge_cost + MaxEdgeNum;
-		backup_array_Edge_x = raw_array_Edge_x + MaxEdgeNum;
-	    backup_array_Edge_visited = raw_array_Edge_visited + MaxEdgeNum;
-		backup_array_Edge_ResidualEdgeNo = raw_array_Edge_ResidualEdgeNo + MaxEdgeNum;
-		backup_array_Edge_IsReversEdge = raw_array_Edge_IsReversEdge + MaxEdgeNum;
-
-		raw_globalmin_array_Vertex_d = new int[MaxVertexNum + 1];
-		raw_globalmin_array_Vertex_consumer_id = new int[MaxVertexNum + 1];
-		raw_globalmin_array_Vertex_EdgesOut = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_globalmin_array_Vertex_EdgesIn = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_globalmin_array_Vertex_distance = new int[MaxVertexNum + 1];
-		raw_globalmin_array_Vertex_from_edge = new int[MaxVertexNum + 1];
-
-
-		globalmin_array_Vertex_d = raw_globalmin_array_Vertex_d + 1;
-		globalmin_array_Vertex_consumer_id = raw_globalmin_array_Vertex_consumer_id + 1;
-		globalmin_array_Vertex_EdgesOut = raw_globalmin_array_Vertex_EdgesOut + MaxEdgeNum;
-		globalmin_array_Vertex_EdgesIn = raw_globalmin_array_Vertex_EdgesIn + MaxEdgeNum;
-		globalmin_array_Vertex_distance = raw_globalmin_array_Vertex_distance + 1;
-		globalmin_array_Vertex_from_edge = raw_globalmin_array_Vertex_from_edge + 1;
-
-		globalmin_array_Consumer_fromVertex = new int[MaxConsumerNum];
-	    globalmin_array_Consumer_requirement = new int[MaxConsumerNum];
-		globalmin_array_Consumer_remaining_requirement = new int[MaxConsumerNum];
-
-		raw_globalmin_array_Edge_from = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_globalmin_array_Edge_to = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_globalmin_array_Edge_bandwidth = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_globalmin_array_Edge_cost = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_globalmin_array_Edge_x = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-	    raw_globalmin_array_Edge_visited = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_globalmin_array_Edge_ResidualEdgeNo = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-		raw_globalmin_array_Edge_IsReversEdge = new int[(MaxVertexNum + 1) * MaxEdgeNum];
-
-		globalmin_array_Edge_from = raw_globalmin_array_Edge_from + MaxEdgeNum;
-		globalmin_array_Edge_to = raw_globalmin_array_Edge_to + MaxEdgeNum;
-		globalmin_array_Edge_bandwidth = raw_globalmin_array_Edge_bandwidth + MaxEdgeNum;
-		globalmin_array_Edge_cost = raw_globalmin_array_Edge_cost + MaxEdgeNum;
-		globalmin_array_Edge_x = raw_globalmin_array_Edge_x + MaxEdgeNum;
-	    globalmin_array_Edge_visited = raw_globalmin_array_Edge_visited + MaxEdgeNum;
-		globalmin_array_Edge_ResidualEdgeNo = raw_globalmin_array_Edge_ResidualEdgeNo + MaxEdgeNum;
-		globalmin_array_Edge_IsReversEdge = raw_globalmin_array_Edge_IsReversEdge + MaxEdgeNum;
-
-
-		init();
+		i_counter = 0;
 	}
 
-	void init(){
-		for(int i = -1;i < MaxVertexNum;i++){
-			array_Vertex_d[i] = 0;
-			array_Vertex_consumer_id[i] = -1;
-		    array_Vertex_distance[i] = 0;
-		    array_Vertex_from_edge[i] = -1;
-			for(int j = 0;j < MaxEdgeNum;j++){
-				array_Vertex_EdgesOut[i * MaxEdgeNum + j] = -1;
-		        array_Vertex_EdgesIn[i * MaxEdgeNum + j] = -1;
-				array_Edge_from[i * MaxEdgeNum + j] = -777;
-		        array_Edge_to[i * MaxEdgeNum + j] = -777;
-		        array_Edge_bandwidth[i * MaxEdgeNum + j] = 0;
-		        array_Edge_cost[i * MaxEdgeNum + j] = 0;
-		        array_Edge_x[i * MaxEdgeNum + j] = 0;
-	            array_Edge_visited[i * MaxEdgeNum + j] = 0;
-		        array_Edge_ResidualEdgeNo[i * MaxEdgeNum + j] = -1;
-		        array_Edge_IsReversEdge[i * MaxEdgeNum + j] = false;
-			}
-		}
+	void copy_from(GraphMemory& other){
+		i_counter = other.i_counter;
+		VNum = other.VNum;
+	    ENum = other.ENum;
+	    CNum = other.CNum;
 
-		for(int i = 0;i < MaxConsumerNum;i++){
-			array_Consumer_fromVertex[i] = -777;
-			array_Consumer_requirement[i] = -777;
-		    array_Consumer_remaining_requirement[i] = -777;
-		}
+		memcpy(raw_array_Vertex_d,other.raw_array_Vertex_d,sizeof(int) * VNum);
+		memcpy(raw_array_Vertex_consumer_id,other.raw_array_Vertex_consumer_id,sizeof(int) * VNum);
+		memcpy(raw_array_Vertex_EdgesOut,other.raw_array_Vertex_EdgesOut,sizeof(int) * ENum);
+		memcpy(raw_array_Vertex_EdgesIn,other.raw_array_Vertex_EdgesIn,sizeof(int) * ENum);
+		memcpy(raw_array_Vertex_distance,other.raw_array_Vertex_distance,sizeof(int) * VNum);
+		memcpy(raw_array_Vertex_from_edge,other.raw_array_Vertex_from_edge,sizeof(int) * VNum);
+
+		memcpy(array_Consumer_fromVertex,other.array_Consumer_fromVertex,sizeof(int) * CNum);
+		memcpy(array_Consumer_requirement,other.array_Consumer_requirement,sizeof(int) * CNum);
+		memcpy(array_Consumer_remaining_requirement,other.array_Consumer_remaining_requirement,sizeof(int) * CNum);
+
+		memcpy(raw_array_Edge_from,other.raw_array_Edge_from,sizeof(int) * ENum);
+		memcpy(raw_array_Edge_to,other.raw_array_Edge_to,sizeof(int) * ENum);
+		memcpy(raw_array_Edge_bandwidth,other.raw_array_Edge_bandwidth,sizeof(int) * ENum);
+		memcpy(raw_array_Edge_cost,other.raw_array_Edge_cost,sizeof(int) * ENum);
+		memcpy(raw_array_Edge_x,other.raw_array_Edge_x,sizeof(int) * ENum);
+		memcpy(raw_array_Edge_visited,other.raw_array_Edge_visited,sizeof(int) * ENum);
+		memcpy(raw_array_Edge_ResidualEdgeNo,other.raw_array_Edge_ResidualEdgeNo,sizeof(int) * ENum);
+		memcpy(raw_array_Edge_IsReversEdge,other.raw_array_Edge_IsReversEdge,sizeof(int) * ENum);
 	}
 
-	~Graph(){
-		delete[] const_array_Vertex_Server_Cost;
-		delete[] const_array_Server_Ability;
-		delete[] const_array_Server_Cost;
-
+	void release(){
 		delete[] raw_array_Vertex_d;
 		delete[] raw_array_Vertex_consumer_id;
 		delete[] raw_array_Vertex_EdgesOut;
@@ -250,7 +174,6 @@ public:
 		delete[] array_Consumer_requirement;
 		delete[] array_Consumer_remaining_requirement;
 
-
 		delete[] raw_array_Edge_from;
 		delete[] raw_array_Edge_to;
 		delete[] raw_array_Edge_bandwidth;
@@ -259,131 +182,109 @@ public:
 		delete[] raw_array_Edge_visited;
 		delete[] raw_array_Edge_ResidualEdgeNo;
 		delete[] raw_array_Edge_IsReversEdge;
+	}
 
-		delete[] raw_globalmin_array_Vertex_d;
-		delete[] raw_globalmin_array_Vertex_consumer_id;
-		delete[] raw_globalmin_array_Vertex_EdgesOut;
-		delete[] raw_globalmin_array_Vertex_EdgesIn;
-		delete[] raw_globalmin_array_Vertex_distance;
-		delete[] raw_globalmin_array_Vertex_from_edge;
+	int VNum;
+	int ENum;
+	int CNum;
 
-		delete[] globalmin_array_Consumer_fromVertex;
-		delete[] globalmin_array_Consumer_requirement;
-		delete[] globalmin_array_Consumer_remaining_requirement;
+	int* array_Vertex_d;
+	int* array_Vertex_consumer_id;
+	int* array_Vertex_EdgesOut;
+	int* array_Vertex_EdgesIn;
+	int* array_Vertex_distance;
+	int* array_Vertex_from_edge;
+	
 
+	int* raw_array_Vertex_d;
+	int* raw_array_Vertex_consumer_id;
+	int* raw_array_Vertex_EdgesOut;
+	int* raw_array_Vertex_EdgesIn;
+	int* raw_array_Vertex_distance;
+	int* raw_array_Vertex_from_edge;
 
-		delete[] raw_globalmin_array_Edge_from;
-		delete[] raw_globalmin_array_Edge_to;
-		delete[] raw_globalmin_array_Edge_bandwidth;
-		delete[] raw_globalmin_array_Edge_cost;
-		delete[] raw_globalmin_array_Edge_x;
-		delete[] raw_globalmin_array_Edge_visited;
-		delete[] raw_globalmin_array_Edge_ResidualEdgeNo;
-		delete[] raw_globalmin_array_Edge_IsReversEdge;
-
-		delete[] backup_raw_array_Vertex_d;
-		delete[] backup_raw_array_Vertex_consumer_id;
-		delete[] backup_raw_array_Vertex_EdgesOut;
-		delete[] backup_raw_array_Vertex_EdgesIn;
-		delete[] backup_raw_array_Vertex_distance;
-		delete[] backup_raw_array_Vertex_from_edge;
-
-		delete[] backup_array_Consumer_fromVertex;
-		delete[] backup_array_Consumer_requirement;
-		delete[] backup_array_Consumer_remaining_requirement;
+	int* array_Consumer_fromVertex;
+	int* array_Consumer_requirement;
+	int* array_Consumer_remaining_requirement;
 
 
-		delete[] backup_raw_array_Edge_from;
-		delete[] backup_raw_array_Edge_to;
-		delete[] backup_raw_array_Edge_bandwidth;
-		delete[] backup_raw_array_Edge_cost;
-		delete[] backup_raw_array_Edge_x;
-		delete[] backup_raw_array_Edge_visited;
-		delete[] backup_raw_array_Edge_ResidualEdgeNo;
-		delete[] backup_raw_array_Edge_IsReversEdge;
+	int* array_Edge_from;
+	int* array_Edge_to;
+	int* array_Edge_bandwidth;
+	int* array_Edge_cost;
+	int* array_Edge_x;
+	int* array_Edge_visited;
+	int* array_Edge_ResidualEdgeNo;
+	int* array_Edge_IsReversEdge;
+
+	int* raw_array_Edge_from;
+	int* raw_array_Edge_to;
+	int* raw_array_Edge_bandwidth;
+	int* raw_array_Edge_cost;
+	int* raw_array_Edge_x;
+	int* raw_array_Edge_visited;
+	int* raw_array_Edge_ResidualEdgeNo;
+	int* raw_array_Edge_IsReversEdge;
+
+	int i_counter;
+};
+
+class Graph
+{
+public:
+    Graph():ServerLvlNum(0){
+		const_array_Vertex_Server_Cost = new int[MaxVertexNum];
+		const_array_Server_Ability = new int[MaxServerLvlNum];
+		const_array_Server_Cost = new int[MaxServerLvlNum];
+	}
+
+	void init(GraphMemory& memory){
+		for(int i = -1;i < VertexNum;i++){
+			memory.array_Vertex_d[i] = 0;
+			memory.array_Vertex_consumer_id[i] = -1;
+		    memory.array_Vertex_distance[i] = 0;
+		    memory.array_Vertex_from_edge[i] = -1;
+			int size = array_Vertex2Edge_len[i];
+		}
+
+		for(int i = 0;i < memory.ENum;i++){
+			memory.array_Vertex_EdgesOut[i] = -1;
+		    memory.array_Vertex_EdgesIn[i] = -1;
+			memory.array_Edge_from[i] = -777;
+		    memory.array_Edge_to[i] = -777;
+		    memory.array_Edge_bandwidth[i] = 0;
+		    memory.array_Edge_cost[i] = 0;
+		    memory.array_Edge_x[i] = 0;
+	        memory.array_Edge_visited[i] = 0;
+		    memory.array_Edge_ResidualEdgeNo[i] = -1;
+		    memory.array_Edge_IsReversEdge[i] = false;
+		}
+
+		for(int i = 0;i < memory.CNum;i++){
+			memory.array_Consumer_fromVertex[i] = -777;
+			memory.array_Consumer_requirement[i] = -777;
+		    memory.array_Consumer_remaining_requirement[i] = -777;
+		}
+	}
+
+	~Graph(){
 	}
 
 	void save(){
-		memcpy(backup_raw_array_Vertex_d,raw_array_Vertex_d,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(backup_raw_array_Vertex_consumer_id,raw_array_Vertex_consumer_id,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(backup_raw_array_Vertex_EdgesOut,raw_array_Vertex_EdgesOut,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Vertex_EdgesIn,raw_array_Vertex_EdgesIn,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Vertex_distance,raw_array_Vertex_distance,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(backup_raw_array_Vertex_from_edge,raw_array_Vertex_from_edge,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(backup_array_Consumer_fromVertex,array_Consumer_fromVertex,sizeof(int) * MaxConsumerNum);
-		memcpy(backup_array_Consumer_requirement,array_Consumer_requirement,sizeof(int) * MaxConsumerNum);
-		memcpy(backup_array_Consumer_remaining_requirement,array_Consumer_remaining_requirement,sizeof(int) * MaxConsumerNum);
-		memcpy(backup_raw_array_Edge_from,raw_array_Edge_from,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_to,raw_array_Edge_to,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_bandwidth,raw_array_Edge_bandwidth,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_cost,raw_array_Edge_cost,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_x,raw_array_Edge_x,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_visited,raw_array_Edge_visited,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_ResidualEdgeNo,raw_array_Edge_ResidualEdgeNo,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(backup_raw_array_Edge_IsReversEdge,raw_array_Edge_IsReversEdge,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		back_i_counter = i_counter;
+		backup_mem.copy_from(mem);
 	}
 
 	void restore(){
-		memcpy(raw_array_Vertex_d,backup_raw_array_Vertex_d,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(raw_array_Vertex_consumer_id,backup_raw_array_Vertex_consumer_id,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(raw_array_Vertex_EdgesOut,backup_raw_array_Vertex_EdgesOut,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Vertex_EdgesIn,backup_raw_array_Vertex_EdgesIn,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Vertex_distance,backup_raw_array_Vertex_distance,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(raw_array_Vertex_from_edge,backup_raw_array_Vertex_from_edge,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(array_Consumer_fromVertex,backup_array_Consumer_fromVertex,sizeof(int) * MaxConsumerNum);
-		memcpy(array_Consumer_requirement,backup_array_Consumer_requirement,sizeof(int) * MaxConsumerNum);
-		memcpy(array_Consumer_remaining_requirement,backup_array_Consumer_remaining_requirement,sizeof(int) * MaxConsumerNum);
-		memcpy(raw_array_Edge_from,backup_raw_array_Edge_from,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_to,backup_raw_array_Edge_to,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_bandwidth,backup_raw_array_Edge_bandwidth,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_cost,backup_raw_array_Edge_cost,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_x,backup_raw_array_Edge_x,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_visited,backup_raw_array_Edge_visited,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_ResidualEdgeNo,backup_raw_array_Edge_ResidualEdgeNo,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_IsReversEdge,backup_raw_array_Edge_IsReversEdge,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		i_counter = back_i_counter;
+		mem.copy_from(backup_mem);
 	}
 
 
 	void save_globalmin(){
-		memcpy(raw_globalmin_array_Vertex_d,raw_array_Vertex_d,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(raw_globalmin_array_Vertex_consumer_id,raw_array_Vertex_consumer_id,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(raw_globalmin_array_Vertex_EdgesOut,raw_array_Vertex_EdgesOut,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_globalmin_array_Vertex_EdgesIn,raw_array_Vertex_EdgesIn,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_globalmin_array_Vertex_distance,raw_array_Vertex_distance,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(raw_globalmin_array_Vertex_from_edge,raw_array_Vertex_from_edge,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(globalmin_array_Consumer_fromVertex,array_Consumer_fromVertex,sizeof(int) * MaxConsumerNum);
-		memcpy(globalmin_array_Consumer_requirement,array_Consumer_requirement,sizeof(int) * MaxConsumerNum);
-		memcpy(globalmin_array_Consumer_remaining_requirement,array_Consumer_remaining_requirement,sizeof(int) * MaxConsumerNum);
-		memcpy(raw_globalmin_array_Edge_from,raw_array_Edge_from,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_globalmin_array_Edge_to,raw_array_Edge_to,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_globalmin_array_Edge_bandwidth,raw_array_Edge_bandwidth,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_globalmin_array_Edge_cost,raw_array_Edge_cost,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_globalmin_array_Edge_x,raw_array_Edge_x,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_globalmin_array_Edge_visited,raw_array_Edge_visited,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_globalmin_array_Edge_ResidualEdgeNo,raw_array_Edge_ResidualEdgeNo,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_globalmin_array_Edge_IsReversEdge,raw_array_Edge_IsReversEdge,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		global_min_mem.copy_from(mem);
 	}
 
 	void restore_globalmin(){
-		memcpy(raw_array_Vertex_d,raw_globalmin_array_Vertex_d,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(raw_array_Vertex_consumer_id,raw_globalmin_array_Vertex_consumer_id,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(raw_array_Vertex_EdgesOut,raw_globalmin_array_Vertex_EdgesOut,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Vertex_EdgesIn,raw_globalmin_array_Vertex_EdgesIn,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Vertex_distance,raw_globalmin_array_Vertex_distance,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(raw_array_Vertex_from_edge,raw_globalmin_array_Vertex_from_edge,sizeof(int) * (MaxVertexNum + 1));
-		memcpy(array_Consumer_fromVertex,globalmin_array_Consumer_fromVertex,sizeof(int) * MaxConsumerNum);
-		memcpy(array_Consumer_requirement,globalmin_array_Consumer_requirement,sizeof(int) * MaxConsumerNum);
-		memcpy(array_Consumer_remaining_requirement,globalmin_array_Consumer_remaining_requirement,sizeof(int) * MaxConsumerNum);
-		memcpy(raw_array_Edge_from,raw_globalmin_array_Edge_from,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_to,raw_globalmin_array_Edge_to,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_bandwidth,raw_globalmin_array_Edge_bandwidth,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_cost,raw_globalmin_array_Edge_cost,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_x,raw_globalmin_array_Edge_x,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_visited,raw_globalmin_array_Edge_visited,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_ResidualEdgeNo,raw_globalmin_array_Edge_ResidualEdgeNo,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
-		memcpy(raw_array_Edge_IsReversEdge,raw_globalmin_array_Edge_IsReversEdge,sizeof(int) * (MaxVertexNum + 1) * MaxEdgeNum);
+		mem.copy_from(global_min_mem);
 	}
 
     void add_Edge(int from,
@@ -398,21 +299,25 @@ public:
 	}
 
 	void push_EdgesOut(int vertexid, int edgeid){
-		for(int i = 0;i < MaxEdgeNum;i++){
-			if(array_Vertex_EdgesOut[vertexid * MaxEdgeNum + i] < 0){
-				array_Vertex_EdgesOut[vertexid * MaxEdgeNum + i] = edgeid;
-				break;
+		int size = array_Vertex2Edge_len[vertexid];
+		for(int i = 0;i < size;i++){
+			if(mem.array_Vertex_EdgesOut[array_Vertex2Edge_offset[vertexid] + i] < 0){
+				mem.array_Vertex_EdgesOut[array_Vertex2Edge_offset[vertexid] + i] = edgeid;
+				return;
 			}
 		}
+		throw "error";
 	}
 
 	void push_EdgesIn(int vertexid, int edgeid){
-		for(int i = 0;i < MaxEdgeNum;i++){
-			if(array_Vertex_EdgesIn[vertexid * MaxEdgeNum + i] < 0){
-				array_Vertex_EdgesIn[vertexid * MaxEdgeNum + i] = edgeid;
-				break;
+		int size = array_Vertex2Edge_len[vertexid];
+		for(int i = 0;i < size;i++){
+			if(mem.array_Vertex_EdgesIn[array_Vertex2Edge_offset[vertexid] + i] < 0){
+				mem.array_Vertex_EdgesIn[array_Vertex2Edge_offset[vertexid] + i] = edgeid;
+				return;
 			}
 		}
+		throw "error";
 	}
 
 	void set_Edge(int id,
@@ -426,52 +331,53 @@ public:
 		push_EdgesOut(from,id);
 		push_EdgesIn(to,id);	
 		
-		array_Edge_from[id] = from;
-		array_Edge_to[id] = to;
+		mem.array_Edge_from[id] = from;
+		mem.array_Edge_to[id] = to;
 		if(!isReverse)
-		    array_Edge_bandwidth[id] = bandwidth;
-		array_Edge_cost[id] = cost;
-		array_Edge_x[id] = 0;
-		array_Edge_visited[id] = 0;
-		array_Edge_ResidualEdgeNo[id] = ResidualEdgeNo;
-		array_Edge_IsReversEdge[id] = isReverse;
+		    mem.array_Edge_bandwidth[id] = bandwidth;
+		mem.array_Edge_cost[id] = cost;
+		mem.array_Edge_x[id] = 0;
+		mem.array_Edge_visited[id] = 0;
+		mem.array_Edge_ResidualEdgeNo[id] = ResidualEdgeNo;
+		mem.array_Edge_IsReversEdge[id] = isReverse;
 	}
 
 	void add_Consumer(const int id,int fromVertex,const int requirement){
-		array_Consumer_fromVertex[id] = fromVertex;
-	    array_Consumer_requirement[id] = requirement;
-	    array_Consumer_remaining_requirement[id] = requirement;
+		mem.array_Consumer_fromVertex[id] = fromVertex;
+	    mem.array_Consumer_requirement[id] = requirement;
+	    mem.array_Consumer_remaining_requirement[id] = requirement;
 
-		array_Vertex_consumer_id[fromVertex] = id;
-		array_Vertex_d[fromVertex] = -requirement;
+		mem.array_Vertex_consumer_id[fromVertex] = id;
+		mem.array_Vertex_d[fromVertex] = -requirement;
 	}
 
 	int GetAnID(){
-		return i_counter++;
+		return mem.i_counter++;
 	}
 
 	void start_from_source(vector<list<int>>& result,list<int> path,int node,int flow,int ServerLvl){
-		int comsumer_id = array_Vertex_consumer_id[node];
+		int comsumer_id = mem.array_Vertex_consumer_id[node];
 		if(comsumer_id >= 0){
 			result.push_back(path);
 			result.back().push_back(comsumer_id);
-			int remaining_requirement = array_Consumer_remaining_requirement[comsumer_id];
+			int remaining_requirement = mem.array_Consumer_remaining_requirement[comsumer_id];
 			if(flow > remaining_requirement){
 				result.back().push_back(remaining_requirement);
 				flow -= remaining_requirement;
-				array_Consumer_remaining_requirement[comsumer_id] = 0;
+				mem.array_Consumer_remaining_requirement[comsumer_id] = 0;
 			}
 			else{
 				result.back().push_back(flow);
-				array_Consumer_remaining_requirement[comsumer_id] -= flow;
+				mem.array_Consumer_remaining_requirement[comsumer_id] -= flow;
 				flow = 0;
 			}
 			result.back().push_back(ServerLvl);
 		}
 		
-		//for(auto e:node->EdgesOut){
-		for(int i = 0;i < MaxEdgeNum;i++){
-			int edge = array_Vertex_EdgesOut[node * MaxEdgeNum + i];
+		int Esize = array_Vertex2Edge_len[node];
+		int offset = array_Vertex2Edge_offset[node];
+		for(int i = 0;i < Esize;i++){
+			int edge = mem.array_Vertex_EdgesOut[offset + i];
 			if(edge < 0)
 			    break;//end of EdgesOut
 #ifdef LEN_DBG
@@ -480,19 +386,19 @@ public:
 #endif
 			if(flow <= 0)
 		        return;
-			if(array_Edge_x[edge] > 0 && 
-			array_Edge_visited[edge] < array_Edge_x[edge]){//还有空余带宽
+			if(mem.array_Edge_x[edge] > 0 && 
+			mem.array_Edge_visited[edge] < mem.array_Edge_x[edge]){//还有空余带宽
 #ifdef LEN_DBG
 			    cout << "x " << edge.x << " visited " << edge.visited << endl;
 #endif
 			    int next_flow;
-				if(flow > array_Edge_x[edge] - array_Edge_visited[edge])
-				    next_flow = array_Edge_x[edge] - array_Edge_visited[edge];
+				if(flow > mem.array_Edge_x[edge] - mem.array_Edge_visited[edge])
+				    next_flow = mem.array_Edge_x[edge] - mem.array_Edge_visited[edge];
 				else
 				    next_flow = flow;
 				flow -= next_flow;//减去被分流的部
-				array_Edge_visited[edge] += next_flow;
-				int next_node = array_Edge_to[edge];
+				mem.array_Edge_visited[edge] += next_flow;
+				int next_node = mem.array_Edge_to[edge];
 				auto _path_copy = path;
 				_path_copy.push_back(next_node);
 				
@@ -507,25 +413,27 @@ public:
 
 	int total_cost(){
 		int sum = 0;
-		int total_edge_num = (MaxVertexNum + 1) * MaxEdgeNum;
-		for(int i = 0;i < total_edge_num;i++){
-			if(!raw_array_Edge_IsReversEdge[i]){// not pesudo source
-			    sum += raw_array_Edge_cost[i] * raw_array_Edge_x[i];
+		for(int i = 0;i < mem.ENum;i++){
+			if(!mem.raw_array_Edge_IsReversEdge[i]){// not pesudo source
+			    sum += mem.raw_array_Edge_cost[i] * mem.raw_array_Edge_x[i];
 			}
 		}
 
-		//for(auto out_from:V[-1].EdgesOut){
-		for(int i = 0;i < MaxEdgeNum;i++){
-			int e = array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
-			if(array_Edge_x[e] > 0)
-			    sum += get_ServerCost(array_Edge_to[e],array_Edge_x[e]);
+		int Esize = array_Vertex2Edge_len[-1];
+		int offset = array_Vertex2Edge_offset[-1];
+		for(int i = 0;i < Esize;i++){
+			int e = mem.array_Vertex_EdgesOut[offset + i];
+			if(e < 0)
+			    break;
+			if(mem.array_Edge_x[e] > 0)
+			    sum += get_ServerCost(mem.array_Edge_to[e],mem.array_Edge_x[e]);
 		}
 		return sum;
 	}
 
 	inline int get_ServerCost(int v,int demand){
 		return const_array_Server_Cost[get_suitable_Server(demand)] 
-		    + const_array_Vertex_Server_Cost[array_Edge_to[v]];
+		    + const_array_Vertex_Server_Cost[mem.array_Edge_to[v]];
 	}
 
 	inline int get_suitable_Server(int demand){
@@ -541,11 +449,15 @@ public:
 	string to_String(){
 		vector<list<int>> result;
 		map<int,int> real_source;
-		//for(auto pesudo_source_out:V.at(-1).EdgesOut){
-		for(int i = 0;i < MaxEdgeNum;i++){
-			if(array_Edge_x[array_Vertex_EdgesOut[-1 * MaxEdgeNum + i]] > 0){//has some flow
-			    real_source[array_Edge_to[array_Vertex_EdgesOut[-1 * MaxEdgeNum + i]]] 
-				    = array_Edge_x[array_Vertex_EdgesOut[-1 * MaxEdgeNum + i]];
+		int Esize = array_Vertex2Edge_len[-1];
+		int offset = array_Vertex2Edge_offset[-1];
+		for(int i = 0;i < Esize;i++){
+			int e = mem.array_Vertex_EdgesOut[offset + i];
+			if(e < 0)
+			    break;
+			if(mem.array_Edge_x[e] > 0){//has some flow
+			    real_source[mem.array_Edge_to[e]] 
+				    = mem.array_Edge_x[e];
 #ifdef LEN_DBG
 				cout << "pesudo_source_out => " << pesudo_source_out->to->id << "  " << pesudo_source_out->x << endl;
 #endif
@@ -578,51 +490,47 @@ public:
 			if(i != line_num - 1)
 			    ret += newline;
 		}
-
-		memcpy(array_Consumer_fromVertex,backup_array_Consumer_fromVertex,sizeof(int) * MaxConsumerNum);
-		memcpy(array_Consumer_requirement,backup_array_Consumer_requirement,sizeof(int) * MaxConsumerNum);
-		memcpy(array_Consumer_remaining_requirement,backup_array_Consumer_remaining_requirement,sizeof(int) * MaxConsumerNum);
-
 		return ret;
 	}
 
 
 	void cost_start_from_source(vector<int>& result,int path_cost,int node,int flow){
-		int comsumer_id = array_Vertex_consumer_id[node];
+		int comsumer_id = mem.array_Vertex_consumer_id[node];
 		if(comsumer_id >= 0){
 			
-			int remaining_requirement = array_Consumer_remaining_requirement[comsumer_id];
+			int remaining_requirement = mem.array_Consumer_remaining_requirement[comsumer_id];
 			if(flow > remaining_requirement){
 				result.push_back(path_cost * remaining_requirement);
 				flow -= remaining_requirement;
-				array_Consumer_remaining_requirement[comsumer_id] = 0;
+				mem.array_Consumer_remaining_requirement[comsumer_id] = 0;
 			}
 			else{
 				result.push_back(path_cost * flow);
-				array_Consumer_remaining_requirement[comsumer_id] -= flow;
+				mem.array_Consumer_remaining_requirement[comsumer_id] -= flow;
 				flow = 0;
 			}
 			    
 		}
 		
-		//for(auto e:node->EdgesOut){
-		for(int i = 0;i < MaxEdgeNum;i++){
-			int edge = array_Vertex_EdgesOut[node * MaxEdgeNum + i];
+		int Esize = array_Vertex2Edge_len[-1];
+		int offset = array_Vertex2Edge_offset[-1];
+		for(int i = 0;i < Esize;i++){
+			int edge = mem.array_Vertex_EdgesOut[offset + i];
 			if(edge < 0)
 			    break;//end of EdgesOut
 			if(flow <= 0)
 		        return;
-			if(array_Edge_x[edge] > 0 && 
-			array_Edge_visited[edge] < array_Edge_x[edge]){//还有空余带宽
+			if(mem.array_Edge_x[edge] > 0 && 
+			mem.array_Edge_visited[edge] < mem.array_Edge_x[edge]){//还有空余带宽
 			    int next_flow;
-				if(flow > array_Edge_x[edge] - array_Edge_visited[edge])
-				    next_flow = array_Edge_x[edge] - array_Edge_visited[edge];
+				if(flow > mem.array_Edge_x[edge] - mem.array_Edge_visited[edge])
+				    next_flow = mem.array_Edge_x[edge] - mem.array_Edge_visited[edge];
 				else
 				    next_flow = flow;
 				flow -= next_flow;//减去被分流的部
-				array_Edge_visited[edge] += next_flow;
-				int next_node = array_Edge_to[edge];
-				path_cost += array_Edge_cost[edge];
+				mem.array_Edge_visited[edge] += next_flow;
+				int next_node = mem.array_Edge_to[edge];
+				path_cost += mem.array_Edge_cost[edge];
 				cost_start_from_source(result,path_cost,next_node,next_flow);
 			}
 		}
@@ -660,11 +568,21 @@ public:
 	int ConsumerNum;
 	int ServerLvlNum;
 
+	int* array_Vertex2Edge_offset;
+	int* array_Vertex2Edge_len;
+
+	int* raw_array_Vertex2Edge_offset;
+	int* raw_array_Vertex2Edge_len;
+
 	int* const_array_Vertex_Server_Cost;
 	int* const_array_Server_Cost;
 	int* const_array_Server_Ability;
 
+	GraphMemory mem;
+	GraphMemory backup_mem;
+	GraphMemory global_min_mem;
 
+    /*
     int* array_Vertex_d;
 	int* array_Vertex_consumer_id;
 	int* array_Vertex_EdgesOut;
@@ -769,10 +687,9 @@ public:
 	int* raw_globalmin_array_Edge_visited;
 	int* raw_globalmin_array_Edge_ResidualEdgeNo;
 	int* raw_globalmin_array_Edge_IsReversEdge;
+	*/
 
 private:
-    int i_counter;
-	int back_i_counter;
 };
 //#undef LEN_DBG
 #endif//__DATA_STRUCTURE_H__

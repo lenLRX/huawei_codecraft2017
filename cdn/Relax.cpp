@@ -10,18 +10,20 @@ int Relax::optimize(){
 
 	unordered_set<int> including_set;
 	for(int i = 0;i < G.ConsumerNum;i++){
-		including_set.insert(G.array_Consumer_fromVertex[i]);
+		including_set.insert(G.mem.array_Consumer_fromVertex[i]);
 	}
 	create_pesudo_source(including_set);
 
 	vector<int> deficit_set;
 
-	for(int i = 0;i < MaxEdgeNum;i++){
-		int e = G.array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
+    int Esize = G.array_Vertex2Edge_len[-1];
+	int offset = G.array_Vertex2Edge_offset[-1];
+	for(int i = 0;i < Esize;i++){
+		int e = G.mem.array_Vertex_EdgesOut[offset + i];
 		if(e < 0)
 		    break;
-		G.array_Edge_x[e] = -G.array_Vertex_d[G.array_Edge_to[e]];
-		deficit_set.push_back(G.array_Edge_to[e]);
+		G.mem.array_Edge_x[e] = -G.mem.array_Vertex_d[G.mem.array_Edge_to[e]];
+		deficit_set.push_back(G.mem.array_Edge_to[e]);
 	}
 	
 	vector<int> deficit_set_original = deficit_set;
@@ -40,7 +42,7 @@ int Relax::optimize(){
 			    break;
 			sort(deficit_set.begin(),deficit_set.end(),
 			[this](const int lhs,const int rhs)->bool{
-				return G.array_Vertex_distance[lhs] > G.array_Vertex_distance[rhs];
+				return G.mem.array_Vertex_distance[lhs] > G.mem.array_Vertex_distance[rhs];
 			});
 			b = false;
 			id = 0;
@@ -56,12 +58,12 @@ int Relax::optimize(){
 
 		sort(deficit_set.begin() + 1,deficit_set.end(),
 		[this](const int lhs,const int rhs)->bool{
-			return G.array_Vertex_distance[lhs] < G.array_Vertex_distance[rhs];
+			return G.mem.array_Vertex_distance[lhs] < G.mem.array_Vertex_distance[rhs];
 		});
 
 		for(size_t i = 1;i < size;i++){
 			int dest = deficit_set[i];
-			if(G.array_Vertex_distance[dest] == numeric_limits<int>::max())
+			if(G.mem.array_Vertex_distance[dest] == numeric_limits<int>::max())
 			    break;
 			else{
 				bool ret = augment_flow(deficit_set[0],dest);
@@ -84,16 +86,17 @@ int Relax::optimize(){
 		for(auto it = deficit_set_original.begin();it != deficit_set_original.end();){
 			int source_edge;
 
-			//for(auto e:(*it)->EdgesIn){
-			for(int j = 0;j < MaxEdgeNum;j++){
-				int e = G.array_Vertex_EdgesIn[(*it) * MaxEdgeNum + j];
-				if(G.array_Edge_from[e] == -1){
+			int Esize = G.array_Vertex2Edge_len[*it];
+	        int offset = G.array_Vertex2Edge_offset[*it];
+			for(int j = 0;j < Esize;j++){
+				int e = G.mem.array_Vertex_EdgesIn[offset + j];
+				if(G.mem.array_Edge_from[e] == -1){
 					source_edge = e;
 					break;
 				}
 			}
 
-			if(G.array_Edge_x[source_edge] == 0){
+			if(G.mem.array_Edge_x[source_edge] == 0){
 				it = deficit_set_original.erase(it);
 			}
 			else{
@@ -109,11 +112,11 @@ int Relax::optimize(){
 void Relax::dijkstra(int source){
 
 	vector<int> Q;
-	for(int i = -1;i < G.VertexNum + 1;i++){
-		G.array_Vertex_distance[i] = numeric_limits<int>::max();
+	for(int i = -1;i < G.VertexNum;i++){
+		G.mem.array_Vertex_distance[i] = numeric_limits<int>::max();
 		Q.push_back(i);
 	}
-	G.array_Vertex_distance[source] = 0;
+	G.mem.array_Vertex_distance[source] = 0;
 
 	size_t v_size = G.VertexNum + 1;
 
@@ -124,8 +127,8 @@ void Relax::dijkstra(int source){
 		int min_element_pos = -1;
 		int min_value = numeric_limits<int>::max();
 		for(size_t j = i;j < v_size;j++){
-			if(G.array_Vertex_distance[Q[j]] < min_value){
-				min_value = G.array_Vertex_distance[Q[j]];
+			if(G.mem.array_Vertex_distance[Q[j]] < min_value){
+				min_value = G.mem.array_Vertex_distance[Q[j]];
 				min_element_pos = j;
 			}
 		}
@@ -140,18 +143,20 @@ void Relax::dijkstra(int source){
 		int v = Q[i];
 
 		//for(auto e:v->EdgesOut){
-		for(int j = 0;j < MaxEdgeNum;j ++){
-			int e = G.array_Vertex_EdgesOut[v * MaxEdgeNum + j];
+		int Esize = G.array_Vertex2Edge_len[v];
+	    int offset = G.array_Vertex2Edge_offset[v];
+		for(int j = 0;j < Esize;j ++){
+			int e = G.mem.array_Vertex_EdgesOut[offset + j];
 			if(e < 0)
 			    break;
-			int u = G.array_Edge_to[e];
+			int u = G.mem.array_Edge_to[e];
 			if(excluding_set[u + 1] || u < 0)
 			    continue;
 			
-			if(G.array_Edge_bandwidth[e] > 0 && G.array_Edge_bandwidth[e] - G.array_Edge_x[e] > 0 
-			    && G.array_Vertex_distance[u] > G.array_Vertex_distance[v] + G.array_Edge_cost[e]){
-				G.array_Vertex_distance[u] = G.array_Vertex_distance[v] + G.array_Edge_cost[e];
-				G.array_Vertex_from_edge[u] = e;
+			if(G.mem.array_Edge_bandwidth[e] > 0 && G.mem.array_Edge_bandwidth[e] - G.mem.array_Edge_x[e] > 0 
+			    && G.mem.array_Vertex_distance[u] > G.mem.array_Vertex_distance[v] + G.mem.array_Edge_cost[e]){
+				G.mem.array_Vertex_distance[u] = G.mem.array_Vertex_distance[v] + G.mem.array_Edge_cost[e];
+				G.mem.array_Vertex_from_edge[u] = e;
 			}
 		}
 	}
@@ -159,19 +164,25 @@ void Relax::dijkstra(int source){
 
 bool Relax::augment_flow(int source,int dest){
 
-	int dest_edge,source_edge;
+	int dest_edge = -777,source_edge = -777;
 
-	for(int i = 0;i < MaxEdgeNum;i++){
-		int e = G.array_Vertex_EdgesIn[dest * MaxEdgeNum + i];
-		if(G.array_Edge_from[e] == -1){
+	int Esize1 = G.array_Vertex2Edge_len[dest];
+	int offset1 = G.array_Vertex2Edge_offset[dest];
+
+	for(int i = 0;i < Esize1;i++){
+		int e = G.mem.array_Vertex_EdgesIn[offset1 + i];
+		if(G.mem.array_Edge_from[e] == -1){
 			dest_edge = e;
 			break;
 		}
 	}
 
-	for(int i = 0;i < MaxEdgeNum;i++){
-		int e = G.array_Vertex_EdgesIn[source * MaxEdgeNum + i];
-		if(G.array_Edge_from[e] == -1){
+	int Esize2 = G.array_Vertex2Edge_len[source];
+	int offset2 = G.array_Vertex2Edge_offset[source];
+
+	for(int i = 0;i < Esize2;i++){
+		int e = G.mem.array_Vertex_EdgesIn[offset2 + i];
+		if(G.mem.array_Edge_from[e] == -1){
 			source_edge = e;
 			break;
 		}
@@ -185,39 +196,39 @@ bool Relax::augment_flow(int source,int dest){
 
 	while(true){
 		//cout << "id: " << pVertex->id << endl;
-		int e = G.array_Vertex_from_edge[pVertex];
-		cost += G.array_Edge_cost[e];
-		if(!G.array_Edge_IsReversEdge[e])
-	        min_value = min(min_value,G.array_Edge_bandwidth[e] - G.array_Edge_x[e]);
+		int e = G.mem.array_Vertex_from_edge[pVertex];
+		cost += G.mem.array_Edge_cost[e];
+		if(!G.mem.array_Edge_IsReversEdge[e])
+	        min_value = min(min_value,G.mem.array_Edge_bandwidth[e] - G.mem.array_Edge_x[e]);
 		else
-			min_value = min(min_value,G.array_Edge_bandwidth[e]);
-		pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
+			min_value = min(min_value,G.mem.array_Edge_bandwidth[e]);
+		pVertex = G.mem.array_Edge_from[G.mem.array_Vertex_from_edge[pVertex]];
 		if(pVertex == source)
 		    break;
 	}
 
 /*
-    if(!G.array_Edge_IsReversEdge[G.array_Vertex_from_edge[dest]]){
+    if(!G.mem.array_Edge_IsReversEdge[G.mem.array_Vertex_from_edge[dest]]){
 		if(cost * min_value < 0){
 			//可以抵消一部分流量
 			//cout << "type1 : source : " << source->id << " dest: " << dest->id << endl;
 			pVertex = dest;
 
-			G.array_Edge_x[dest_edge] -= min_value;
-			G.array_Edge_x[source_edge] += min_value;
+			G.mem.array_Edge_x[dest_edge] -= min_value;
+			G.mem.array_Edge_x[source_edge] += min_value;
 		
 			while(true){
-				int r = G.array_Vertex_from_edge[pVertex];
+				int r = G.mem.array_Vertex_from_edge[pVertex];
 				//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
-				if(!G.array_Edge_IsReversEdge[r]){
-					G.array_Edge_x[r] += min_value;
-					G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
+				if(!G.mem.array_Edge_IsReversEdge[r]){
+					G.mem.array_Edge_x[r] += min_value;
+					G.mem.array_Edge_bandwidth[G.mem.array_Edge_ResidualEdgeNo[r]] = G.mem.array_Edge_x[r];
 				}
 				else{
-					G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]] -= min_value;
-					G.array_Edge_bandwidth[r] = G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]];
+					G.mem.array_Edge_x[G.mem.array_Edge_ResidualEdgeNo[r]] -= min_value;
+					G.mem.array_Edge_bandwidth[r] = G.mem.array_Edge_x[G.mem.array_Edge_ResidualEdgeNo[r]];
 				}
-				pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
+				pVertex = G.mem.array_Edge_from[G.mem.array_Vertex_from_edge[pVertex]];
 				if(pVertex == source)
 					break;
 			}
@@ -225,28 +236,28 @@ bool Relax::augment_flow(int source,int dest){
 		}
 	}
 	else*/{
-		if(G.array_Edge_x[dest_edge] <= min_value){
-				min_value = min(min_value,G.array_Edge_x[dest_edge]);
+		if(G.mem.array_Edge_x[dest_edge] <= min_value){
+				min_value = min(min_value,G.mem.array_Edge_x[dest_edge]);
 				if(cost * min_value < G.get_ServerCost(dest,min_value)){
 				//cout << "type2 : source : " << source->id << " dest: " << dest->id << endl;
 				//流量可以替代这个服务器
 				pVertex = dest;
 			
-				G.array_Edge_x[dest_edge] = 0;
-				G.array_Edge_x[source_edge] += min_value;
+				G.mem.array_Edge_x[dest_edge] = 0;
+				G.mem.array_Edge_x[source_edge] += min_value;
 			
 				while(true){
-					int r = G.array_Vertex_from_edge[pVertex];
+					int r = G.mem.array_Vertex_from_edge[pVertex];
 					//cout << r->from->id << "=>" << r->to->id << " min: " << min_value << endl;
-					if(!G.array_Edge_IsReversEdge[r]){
-						G.array_Edge_x[r] += min_value;
-						G.array_Edge_bandwidth[G.array_Edge_ResidualEdgeNo[r]] = G.array_Edge_x[r];
+					if(!G.mem.array_Edge_IsReversEdge[r]){
+						G.mem.array_Edge_x[r] += min_value;
+						G.mem.array_Edge_bandwidth[G.mem.array_Edge_ResidualEdgeNo[r]] = G.mem.array_Edge_x[r];
 					}
 					else{
-						G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]] -= min_value;
-						G.array_Edge_bandwidth[r] = G.array_Edge_x[G.array_Edge_ResidualEdgeNo[r]];
+						G.mem.array_Edge_x[G.mem.array_Edge_ResidualEdgeNo[r]] -= min_value;
+						G.mem.array_Edge_bandwidth[r] = G.mem.array_Edge_x[G.mem.array_Edge_ResidualEdgeNo[r]];
 					}
-					pVertex = G.array_Edge_from[G.array_Vertex_from_edge[pVertex]];
+					pVertex = G.mem.array_Edge_from[G.mem.array_Vertex_from_edge[pVertex]];
 					if(pVertex == source)
 						break;
 				}
@@ -429,11 +440,14 @@ void Relax::reverse_dijkstra(int source){
 vector<int> Relax::get_result(){
 	vector<int> ret(G.VertexNum,false);
 	
-	//for(auto e:pesudoSource->EdgesOut){
-	for(int i = 0;i < MaxEdgeNum;i++){
-		int e = G.array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
-		if(G.array_Edge_x[e] > 0)//has some flow
-		    ret[G.array_Edge_to[e]] = true;
+	int Esize = G.array_Vertex2Edge_len[-1];
+	int offset = G.array_Vertex2Edge_offset[-1];
+	for(int i = 0;i < Esize;i++){
+		int e = G.mem.array_Vertex_EdgesOut[offset + i];
+		if(e < 0)
+		    break;
+		if(G.mem.array_Edge_x[e] > 0)//has some flow
+		    ret[G.mem.array_Edge_to[e]] = true;
 	}
 	return ret;
 }

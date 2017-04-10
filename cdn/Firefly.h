@@ -55,7 +55,7 @@ public:
 		_float_distribution(uniform_real_distribution<float>(0,1)){
 			consumer_map = vector<int>(NodeNum,false);
 			for(int i = 0;i < lr.G.ConsumerNum;i++){
-				consumer_map[lr.G.array_Consumer_fromVertex[i]] = true;
+				consumer_map[lr.G.mem.array_Consumer_fromVertex[i]] = true;
 			}
 
 			Fireflies.resize(population);
@@ -69,7 +69,7 @@ public:
 			}
 
 			for(int i = 0;i < lr.G.ConsumerNum;i++){
-				Fireflies[0].bits[lr.G.array_Consumer_fromVertex[i]] = true;
+				Fireflies[0].bits[lr.G.mem.array_Consumer_fromVertex[i]] = true;
 			}
 		}
 	

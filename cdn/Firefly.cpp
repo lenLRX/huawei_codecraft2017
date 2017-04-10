@@ -59,14 +59,16 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 	    fly.objective = numeric_limits<int>::max();
 	
 	if(b > 0){
-		for(int i = 0;i < MaxEdgeNum;i++){
-			int e = lr.G.array_Vertex_EdgesOut[-1 * MaxEdgeNum + i];
+		int Esize = lr.G.array_Vertex2Edge_len[-1];
+		int offset = lr.G.array_Vertex2Edge_offset[-1];
+		for(int i = 0;i < Esize;i++){
+			int e = lr.G.mem.array_Vertex_EdgesOut[offset + i];
 			if(e < 0)
 			    break;
-			if(lr.G.array_Edge_x[e] > 0)
-			    fly.bits[lr.G.array_Edge_to[e]] = true;
+			if(lr.G.mem.array_Edge_x[e] > 0)
+			    fly.bits[lr.G.mem.array_Edge_to[e]] = true;
 			else
-			    fly.bits[lr.G.array_Edge_to[e]] = false;
+			    fly.bits[lr.G.mem.array_Edge_to[e]] = false;
 		}
 	}
 	
