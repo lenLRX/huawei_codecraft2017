@@ -433,7 +433,7 @@ public:
 
 	inline int get_ServerCost(int v,int demand){
 		return const_array_Server_Cost[get_suitable_Server(demand)] 
-		    + const_array_Vertex_Server_Cost[mem.array_Edge_to[v]];
+		    + const_array_Vertex_Server_Cost[v];
 	}
 
 	inline int get_suitable_Server(int demand){
