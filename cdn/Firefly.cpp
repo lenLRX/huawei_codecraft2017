@@ -50,8 +50,10 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 		if(fly.bits[i])
 		    includeing_set.insert(i);
 	}
-
-	lr.create_pesudo_source(includeing_set);
+    if(Timer::getInstance().get() < 80000)
+	    lr.legacy_create_pesudo_source(includeing_set);
+	else
+	    lr.create_pesudo_source(includeing_set);
 	int b = lr.optimize();
 	if(b > 0)
 	    fly.objective = b;
@@ -61,14 +63,13 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 	if(b > 0){
 		int Esize = lr.G.array_Vertex2Edge_len[-1];
 		int offset = lr.G.array_Vertex2Edge_offset[-1];
+		fly.bits = vector<int>(lr.G.VertexNum,false);
 		for(int i = 0;i < Esize;i++){
 			int e = lr.G.mem.array_Vertex_EdgesOut[offset + i];
 			if(e < 0)
 			    break;
 			if(lr.G.mem.array_Edge_x[e] > 0)
 			    fly.bits[lr.G.mem.array_Edge_to[e]] = true;
-			else
-			    fly.bits[lr.G.mem.array_Edge_to[e]] = false;
 		}
 	}
 	
@@ -177,7 +178,7 @@ void FireflySolver::Alpha_step(Firefly& fly){
 			}
 		}
 
-		else if(rand_num < 1 - Timer::getInstance().get() / (float)100000){
+		else if(rand_num < 0.5){
 			/*
 			int rand_position = _random_cell_distribution(generator);
 	        fly.newbits[rand_position] = 0;

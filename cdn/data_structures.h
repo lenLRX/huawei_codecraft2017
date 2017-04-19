@@ -414,7 +414,7 @@ public:
 	int total_cost(){
 		int sum = 0;
 		for(int i = 0;i < mem.ENum;i++){
-			if(!mem.raw_array_Edge_IsReversEdge[i]){// not pesudo source
+			if(!mem.raw_array_Edge_IsReversEdge[i] && mem.raw_array_Edge_from[i] != -1){// not pesudo source
 			    sum += mem.raw_array_Edge_cost[i] * mem.raw_array_Edge_x[i];
 			}
 		}
@@ -457,10 +457,7 @@ public:
 			    break;
 			if(mem.array_Edge_x[e] > 0){//has some flow
 			    real_source[mem.array_Edge_to[e]] 
-				    = mem.array_Edge_x[e];
-#ifdef LEN_DBG
-				cout << "pesudo_source_out => " << pesudo_source_out->to->id << "  " << pesudo_source_out->x << endl;
-#endif
+				    += mem.array_Edge_x[e];
 			}
 		}
 

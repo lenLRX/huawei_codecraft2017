@@ -45,6 +45,13 @@ void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 		string s;
 		if(line.length() < 3)
 		    break;
+		ss >> s;
+		int lvl_id = stoi(s);
+		G.ServerLvlNum++;
+		ss >> s;
+		G.const_array_Server_Ability[lvl_id] = stoi(s);
+		ss >> s;
+		G.const_array_Server_Cost[lvl_id] = stoi(s);
 	}
 
 	i++;
@@ -79,11 +86,11 @@ void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 		EdgeCounter[to]++;
 	}
 
-	G.array_Vertex2Edge_len[-1] = G.VertexNum;
+	G.array_Vertex2Edge_len[-1] = G.VertexNum * G.ServerLvlNum * 2;
 	G.array_Vertex2Edge_offset[-1] = 0;
 
 	for(int i = 0;i < G.VertexNum;i++){
-		G.array_Vertex2Edge_len[i] = (EdgeCounter[i] + 1) * 2;
+		G.array_Vertex2Edge_len[i] = (EdgeCounter[i] + G.ServerLvlNum) * 2;
 		G.array_Vertex2Edge_offset[i] = 
 		    G.array_Vertex2Edge_offset[i - 1] + G.array_Vertex2Edge_len[i - 1];
 	}
@@ -96,21 +103,23 @@ void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 	parse_first_line(G,graph[0]);
 	i = 2;
 
+	int Edge_slot_num = G.EdgeNum * 2 + G.VertexNum * 2 * G.ServerLvlNum * 2;
+
 	G.mem.init(G.VertexNum + 1,
-	    G.EdgeNum * 2 + G.VertexNum * 2 + G.VertexNum * 2,
+	    Edge_slot_num,
 		G.ConsumerNum);
 	
-	cout << G.EdgeNum * 2 + G.VertexNum * 2 + G.VertexNum * 2
-	<< " <=> " << G.array_Vertex2Edge_offset[G.VertexNum - 1] << endl;
+	cout << Edge_slot_num
+	<< " <=> " << G.array_Vertex2Edge_offset[G.VertexNum - 1] + G.array_Vertex2Edge_len[G.VertexNum - 1]<< endl;
 
 	G.init(G.mem);
 	
 	G.backup_mem.init(G.VertexNum + 1,
-	    G.EdgeNum * 2 + G.VertexNum * 2 + G.VertexNum * 2,
+	    Edge_slot_num,
 		G.ConsumerNum);
 	
 	G.global_min_mem.init(G.VertexNum + 1,
-	    G.EdgeNum * 2 + G.VertexNum * 2 + G.VertexNum * 2,
+	    Edge_slot_num,
 		G.ConsumerNum);
 
 	for(;;i++){
@@ -119,13 +128,6 @@ void parse(char* graph[MAX_EDGE_NUM], int line_num,Graph& G){
 		string s;
 		if(line.length() < 3)
 		    break;
-		ss >> s;
-		int lvl_id = stoi(s);
-		G.ServerLvlNum++;
-		ss >> s;
-		G.const_array_Server_Ability[lvl_id] = stoi(s);
-		ss >> s;
-		G.const_array_Server_Cost[lvl_id] = stoi(s);
 	}
 
 	i++;

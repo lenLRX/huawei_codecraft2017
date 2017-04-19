@@ -16,6 +16,9 @@ public:
 
 	void create_pesudo_source(unordered_set<int> 
 	    includingVertex = unordered_set<int>());
+	
+	void legacy_create_pesudo_source(unordered_set<int> 
+	    includingVertex = unordered_set<int>());
 
 	void check();
 };

@@ -46,13 +46,20 @@ int SSPA2::optimize(){
 			}
 		}
 	}
+	vector<int> actual_flow(G.VertexNum,0);
 	int E_size = G.array_Vertex2Edge_len[-1];
 	for(int i = 0;i < E_size;i++){
 		int e = G.mem.array_Vertex_EdgesOut[G.array_Vertex2Edge_offset[-1] + i];
 		if(e < 0)
 		    break;
 		if(G.mem.array_Edge_x[e] > 0)
-		    local_cost += G.get_ServerCost(G.mem.array_Edge_to[e],G.mem.array_Edge_x[e]);
+		    actual_flow[G.mem.array_Edge_to[e]] += G.mem.array_Edge_x[e];
+		    //local_cost += G.get_ServerCost(G.mem.array_Edge_to[e],G.mem.array_Edge_x[e]);
+	}
+
+	for(int i = 0;i < G.VertexNum;i++){
+		if(actual_flow[i] > 0)
+		    local_cost += G.get_ServerCost(i,actual_flow[i]);
 	}
 	return local_cost;
 }
@@ -85,7 +92,7 @@ void SSPA2::dijkstra(int source){
 			if(e < 0)
 			    break;
 			int u = G.mem.array_Edge_to[e];
-			if(excluding_set[u + 1])
+			if(excluding_set[u + 1] || u < 0)
 			    continue;
 			
 			if(G.mem.array_Edge_bandwidth[e] > 0 && G.mem.array_Edge_bandwidth[e] - G.mem.array_Edge_x[e] > 0 
@@ -171,17 +178,21 @@ int SSPA2::augment_flow(int dest){
 	while(true){
 		//cout << "id: " << pVertex->id << endl;
 		int e = G.mem.array_Vertex_from_edge[pVertex];
-		cost += G.mem.array_Edge_cost[e];
+		if(G.mem.array_Edge_from[e] != -1)
+		    cost += G.mem.array_Edge_cost[e];
 		if(!G.mem.array_Edge_IsReversEdge[e])
 	        min_value = min(min_value,G.mem.array_Edge_bandwidth[e] - G.mem.array_Edge_x[e]);
 		else
 			min_value = min(min_value,G.mem.array_Edge_bandwidth[e]);
-		pVertex = G.mem.array_Edge_from[G.mem.array_Vertex_from_edge[pVertex]];
+		pVertex = G.mem.array_Edge_from[e];
 		if(pVertex == source)
 		    break;
 	}
 
 	cost = cost * min_value;
+
+	if(min_value == 0)
+	    return 0;
 
 	G.mem.array_Vertex_d[-1] -= min_value;
 	G.mem.array_Vertex_d[dest] += min_value;

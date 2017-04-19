@@ -1,4 +1,5 @@
 #include "Relax.h"
+#include "array_heap.h"
 #include "deploy.h"
 #include <assert.h>
 #include <algorithm>
@@ -12,7 +13,7 @@ int Relax::optimize(){
 	for(int i = 0;i < G.ConsumerNum;i++){
 		including_set.insert(G.mem.array_Consumer_fromVertex[i]);
 	}
-	create_pesudo_source(including_set);
+	legacy_create_pesudo_source(including_set);
 
 	vector<int> deficit_set;
 
@@ -111,12 +112,14 @@ int Relax::optimize(){
 
 void Relax::dijkstra(int source){
 
-	vector<int> Q;
-	for(int i = -1;i < G.VertexNum;i++){
+	for(int i = 0;i < G.VertexNum;i++){
 		G.mem.array_Vertex_distance[i] = numeric_limits<int>::max();
-		Q.push_back(i);
 	}
+	G.mem.array_Vertex_distance[-1] = numeric_limits<int>::max();
 	G.mem.array_Vertex_distance[source] = 0;
+	array_heap _heap(G.VertexNum +1,G);
+	_heap.heapify(0);
+	_heap.decrease_key(source);
 
 	size_t v_size = G.VertexNum + 1;
 
@@ -124,39 +127,29 @@ void Relax::dijkstra(int source){
 	vector<int> excluding_set(v_size,false);
 	
 	for(size_t i = 0;i < v_size - 1;i++){
-		int min_element_pos = -1;
-		int min_value = numeric_limits<int>::max();
-		for(size_t j = i;j < v_size;j++){
-			if(G.mem.array_Vertex_distance[Q[j]] < min_value){
-				min_value = G.mem.array_Vertex_distance[Q[j]];
-				min_element_pos = j;
-			}
-		}
+		int v = _heap.extract_min();
+		int distance = G.mem.array_Vertex_distance[v];
 
-		if(min_element_pos < 0)
+		if(distance == numeric_limits<int>::max())
 		    return;
 
-		swap(Q[i],Q[min_element_pos]);
+		excluding_set[v + 1] = true;
 
-		excluding_set[Q[i] + 1] = true;
-
-		int v = Q[i];
-
-		//for(auto e:v->EdgesOut){
+		int offset = G.array_Vertex2Edge_offset[v];
 		int Esize = G.array_Vertex2Edge_len[v];
-	    int offset = G.array_Vertex2Edge_offset[v];
 		for(int j = 0;j < Esize;j ++){
 			int e = G.mem.array_Vertex_EdgesOut[offset + j];
 			if(e < 0)
 			    break;
 			int u = G.mem.array_Edge_to[e];
-			if(excluding_set[u + 1] || u < 0)
+			if(excluding_set[u + 1])
 			    continue;
 			
 			if(G.mem.array_Edge_bandwidth[e] > 0 && G.mem.array_Edge_bandwidth[e] - G.mem.array_Edge_x[e] > 0 
 			    && G.mem.array_Vertex_distance[u] > G.mem.array_Vertex_distance[v] + G.mem.array_Edge_cost[e]){
 				G.mem.array_Vertex_distance[u] = G.mem.array_Vertex_distance[v] + G.mem.array_Edge_cost[e];
 				G.mem.array_Vertex_from_edge[u] = e;
+				_heap.decrease_key(u);
 			}
 		}
 	}
@@ -188,7 +181,7 @@ bool Relax::augment_flow(int source,int dest){
 		}
 	}
 	int min_value = numeric_limits<int>::max();
-	
+	min_value = min(min_value,G.mem.array_Edge_bandwidth[source_edge] - G.mem.array_Edge_x[source_edge]);
 
 	int pVertex = dest;
 
@@ -206,6 +199,8 @@ bool Relax::augment_flow(int source,int dest){
 		if(pVertex == source)
 		    break;
 	}
+	if(min_value <= 0)
+	    return false;
 
 /*
     if(!G.mem.array_Edge_IsReversEdge[G.mem.array_Vertex_from_edge[dest]]){
@@ -446,6 +441,7 @@ vector<int> Relax::get_result(){
 		int e = G.mem.array_Vertex_EdgesOut[offset + i];
 		if(e < 0)
 		    break;
+		//cout << "Relax::get_result() " << G.mem.array_Edge_x[e] << endl;
 		if(G.mem.array_Edge_x[e] > 0)//has some flow
 		    ret[G.mem.array_Edge_to[e]] = true;
 	}
