@@ -6,25 +6,35 @@
 #include <string>
 
 int Relax::optimize(){
-
-	G.restore();
-
-	unordered_set<int> including_set;
-	for(int i = 0;i < G.ConsumerNum;i++){
-		including_set.insert(G.mem.array_Consumer_fromVertex[i]);
-	}
-	legacy_create_pesudo_source(including_set);
-
 	vector<int> deficit_set;
+    if(init){
+		G.restore();
 
-    int Esize = G.array_Vertex2Edge_len[-1];
-	int offset = G.array_Vertex2Edge_offset[-1];
-	for(int i = 0;i < Esize;i++){
-		int e = G.mem.array_Vertex_EdgesOut[offset + i];
-		if(e < 0)
-		    break;
-		G.mem.array_Edge_x[e] = -G.mem.array_Vertex_d[G.mem.array_Edge_to[e]];
-		deficit_set.push_back(G.mem.array_Edge_to[e]);
+		unordered_set<int> including_set;
+		for(int i = 0;i < G.ConsumerNum;i++){
+			including_set.insert(G.mem.array_Consumer_fromVertex[i]);
+		}
+		legacy_create_pesudo_source(including_set);
+
+		int Esize = G.array_Vertex2Edge_len[-1];
+		int offset = G.array_Vertex2Edge_offset[-1];
+		for(int i = 0;i < Esize;i++){
+			int e = G.mem.array_Vertex_EdgesOut[offset + i];
+			if(e < 0)
+				break;
+			G.mem.array_Edge_x[e] = -G.mem.array_Vertex_d[G.mem.array_Edge_to[e]];
+			deficit_set.push_back(G.mem.array_Edge_to[e]);
+		}
+	}
+	else{
+		int Esize = G.array_Vertex2Edge_len[-1];
+		int offset = G.array_Vertex2Edge_offset[-1];
+		for(int i = 0;i < Esize;i++){
+			int e = G.mem.array_Vertex_EdgesOut[offset + i];
+			if(e < 0)
+				break;
+			deficit_set.push_back(G.mem.array_Edge_to[e]);
+		}
 	}
 	
 	vector<int> deficit_set_original = deficit_set;
@@ -106,8 +116,9 @@ int Relax::optimize(){
 		}
 		b = b || b_vertex;
 	}
-	cout << "cost " << G.total_cost() << endl;
-	return true;
+	int out_cost = G.total_cost();
+	cout << "cost " << out_cost << endl;
+	return out_cost;
 }
 
 void Relax::dijkstra(int source){
@@ -118,7 +129,6 @@ void Relax::dijkstra(int source){
 	G.mem.array_Vertex_distance[-1] = numeric_limits<int>::max();
 	G.mem.array_Vertex_distance[source] = 0;
 	array_heap _heap(G.VertexNum +1,G);
-	_heap.heapify(0);
 	_heap.decrease_key(source);
 
 	size_t v_size = G.VertexNum + 1;
@@ -142,7 +152,7 @@ void Relax::dijkstra(int source){
 			if(e < 0)
 			    break;
 			int u = G.mem.array_Edge_to[e];
-			if(excluding_set[u + 1])
+			if(excluding_set[u + 1] || u < 0)
 			    continue;
 			
 			if(G.mem.array_Edge_bandwidth[e] > 0 && G.mem.array_Edge_bandwidth[e] - G.mem.array_Edge_x[e] > 0 
@@ -233,7 +243,11 @@ bool Relax::augment_flow(int source,int dest){
 	else*/{
 		if(G.mem.array_Edge_x[dest_edge] <= min_value){
 				min_value = min(min_value,G.mem.array_Edge_x[dest_edge]);
-				if(cost * min_value < G.get_ServerCost(dest,min_value)){
+				int delta_serverCost = 
+				    G.get_ServerCost(source,G.mem.array_Edge_x[source] + min_value)
+				-   G.get_ServerCost(source,G.mem.array_Edge_x[source]);
+				//cout << "delta_serverCost " << delta_serverCost << endl;
+				if(cost * min_value + delta_serverCost < G.get_ServerCost(dest,min_value)){
 				//cout << "type2 : source : " << source->id << " dest: " << dest->id << endl;
 				//流量可以替代这个服务器
 				pVertex = dest;

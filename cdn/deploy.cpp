@@ -10,6 +10,7 @@
 #include "Firefly.h"
 
 #include "Timer.h"
+#include "zkw.h"
 #include <random>
 #include <algorithm>
 
@@ -46,11 +47,13 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	
 	SSPA2 optimizer(G);
 
-	FireflySolver solver(optimizer,20,0.001,1,G.VertexNum);
+	FireflySolver solver(optimizer,20,0.01,1,G.VertexNum);
 	solver.init(init_optimizer.get_result());
+	
 	for(auto& c:solver.consumer_map){
 		c = true;
 	}
+	
 	solver.optimize(100000);
 	
 	/*

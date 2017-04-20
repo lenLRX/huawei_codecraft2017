@@ -6,7 +6,7 @@
 class Relax:public Optimizer
 {
 public:
-    Relax(Graph& G):Optimizer(G){}
+    Relax(Graph& G,bool init = true):Optimizer(G),init(init){}
     virtual int optimize();
 	void save_topo();
 	void dijkstra(int source);
@@ -18,6 +18,7 @@ public:
 	vector<int> postOptimize();
 
 	int cost_sum;
+	bool init;
 };
 
 #endif//__RELAX_H__

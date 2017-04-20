@@ -1,5 +1,6 @@
 #include "Firefly.h"
 #include "Timer.h"
+#include "Relax.h"
 
 #include <algorithm>
 
@@ -26,8 +27,8 @@ bool FireflySolver::UpdateObjectiveAndBestFly(){
 			//continue;
 		}
 		else{
-			tabu.insert(fly.bits);
 			bool b = CostOfFly(fly,i);
+			tabu.insert(fly.bits);
 			ret = b || ret;
 		}
 		
@@ -50,7 +51,7 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 		if(fly.bits[i])
 		    includeing_set.insert(i);
 	}
-    if(Timer::getInstance().get() < 80000)
+    if(true || Timer::getInstance().get() < 85000)
 	    lr.legacy_create_pesudo_source(includeing_set);
 	else
 	    lr.create_pesudo_source(includeing_set);
@@ -61,6 +62,8 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 	    fly.objective = numeric_limits<int>::max();
 	
 	if(b > 0){
+		
+		
 		int Esize = lr.G.array_Vertex2Edge_len[-1];
 		int offset = lr.G.array_Vertex2Edge_offset[-1];
 		fly.bits = vector<int>(lr.G.VertexNum,false);
@@ -79,6 +82,10 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 		for(auto b:fly.bits){
 			if(b)
 			    minServerNum++;
+		}
+		if(false && Timer::getInstance().get() > 85000){
+			Relax  init_optimizer(lr.G,false);
+	        fly.objective = init_optimizer.optimize();
 		}
 		GlobalMin = fly.objective;
 		cout << "new GlobalMin: " 
@@ -178,7 +185,7 @@ void FireflySolver::Alpha_step(Firefly& fly){
 			}
 		}
 
-		else if(rand_num < 0.5){
+		else if(rand_num < 0.1){
 			/*
 			int rand_position = _random_cell_distribution(generator);
 	        fly.newbits[rand_position] = 0;
@@ -208,193 +215,132 @@ void FireflySolver::Alpha_step(Firefly& fly){
 			
 		}
 		else{
+            if(_0_1_distribution(generator) < 0.5){
 			int count = fly.count();
-				//cout << "count : " << count << endl;
-				uniform_int_distribution<int> d(0,count - 1);
+			//cout << "count : " << count << endl;
+			uniform_int_distribution<int> d(0,count - 1);
 
-				int to_swap = d(generator);
+			int to_swap = d(generator);
 
-				int pos1 = -1;
+			int pos1 = -1;
 
-				size_t bits_size = fly.newbits.size();
-				int c = 0;
-				for(size_t i = 0;i < bits_size;i++){
-					if(fly.newbits[i]){
-						if(c == to_swap){
-							pos1 = i;
-							break;
-						}
-						c++;
-					}	
-				}
-
-				c = 0;
-				int pos2 = -1;
-
-				int empty_consumer_node_num = 0;
-				for(size_t i = 0;i < bits_size;i++){
-					if(consumer_map[i] && !fly.newbits[i]){
-						empty_consumer_node_num++;
+			size_t bits_size = fly.newbits.size();
+			int c = 0;
+			for(size_t i = 0;i < bits_size;i++){
+				if(fly.newbits[i]){
+					if(c == to_swap){
+						pos1 = i;
+						break;
 					}
+					c++;
+				}	
+			}
+
+			c = 0;
+			int pos2 = -1;
+
+			int empty_consumer_node_num = 0;
+			for(size_t i = 0;i < bits_size;i++){
+				if(consumer_map[i] && !fly.newbits[i]){
+					empty_consumer_node_num++;
 				}
+			}
 
-				if(empty_consumer_node_num <= 0){
-					uniform_int_distribution<int> d2(0,NodeNum - count - 1);
-					int to_swap2 = d2(generator);
-					for(size_t i = 0;i < bits_size;i++){
-						if(!fly.newbits[i]){
-							if(c == to_swap2){
-								pos2 = i;
-								break;
-							}
-							c++;
-						}	
-					}
-
-				}else{
-					int c_to_open = uniform_int_distribution<int>(0,
-					empty_consumer_node_num - 1)(generator);
-
-					for(size_t i = 0;i < bits_size;i++){
-						if(consumer_map[i] && !fly.newbits[i]){
-							if(c == c_to_open){
-								pos2 = i;
-								break;
-							}
-							c++;
-						}
-					}
-				}
-
-				if(pos1 < 0)
-					cout << "error! " << pos1 << " to_swap: " << to_swap << " count " << count << endl;
-				
-				if(pos2 < 0)
-					cout << "error " << pos2 << " " << empty_consumer_node_num << endl;
-
-				swap(fly.newbits[pos1],fly.newbits[pos2]);
-		}
-		#ifdef shit
-		else{
-			float rand_num2 = _0_1_distribution(generator);
-			if(Timer::getInstance().get() > 40000 && rand_num2 < 0.5){
-				int count = fly.count();
-				//cout << "count : " << count << endl;
-				uniform_int_distribution<int> d(0,count - 1);
-
-				int to_swap = d(generator);
-
-				int pos1 = -1;
-
-				size_t bits_size = fly.newbits.size();
-				int c = 0;
-				for(size_t i = 0;i < bits_size;i++){
-					if(fly.newbits[i]){
-						if(c == to_swap){
-							pos1 = i;
-							break;
-						}
-						c++;
-					}	
-				}
-
-				c = 0;
-
-				int near_by_count = lr.G.V.at(pos1).EdgesIn.size() + lr.G.V.at(pos1).EdgesIn.size();
-
-				uniform_int_distribution<int> d2(0,near_by_count - 1);
-
+			if(empty_consumer_node_num <= 0){
+				uniform_int_distribution<int> d2(0,NodeNum - count - 1);
 				int to_swap2 = d2(generator);
-
-				int pos2 = -1;
-
-				size_t insize = lr.G.V.at(pos1).EdgesIn.size();
-
-				if(to_swap2 < insize){
-					pos2 = lr.G.V.at(pos1).EdgesIn[to_swap2]->to->id;
-				}
-				else{
-					pos2 = lr.G.V.at(pos1).EdgesOut[to_swap2 - insize]->to->id;
-				}
-
-				if(pos1 < 0)
-					cout << "error! " << pos1 << " to_swap: " << to_swap << " count " << count << endl;
-				
-				if(pos2 < 0)
-					pos2 = _random_cell_distribution(generator);
-
-				swap(fly.newbits[pos1],fly.newbits[pos2]);
-
-			}//if(Timer::getInstance().get() > 40 && rand_num2 < 0.5)
-			else{
-				int count = fly.count();
-				//cout << "count : " << count << endl;
-				uniform_int_distribution<int> d(0,count - 1);
-
-				int to_swap = d(generator);
-
-				int pos1 = -1;
-
-				size_t bits_size = fly.newbits.size();
-				int c = 0;
 				for(size_t i = 0;i < bits_size;i++){
-					if(fly.newbits[i]){
-						if(c == to_swap){
-							pos1 = i;
-							break;
+					if(!fly.newbits[i]){
+						if(c == to_swap2){
+						    pos2 = i;
+						    	break;
 						}
 						c++;
 					}	
 				}
 
-				c = 0;
-				int pos2 = -1;
-
-				int empty_consumer_node_num = 0;
+			}else{
+				int c_to_open = uniform_int_distribution<int>(0,
+				empty_consumer_node_num - 1)(generator);
 				for(size_t i = 0;i < bits_size;i++){
 					if(consumer_map[i] && !fly.newbits[i]){
-						empty_consumer_node_num++;
-					}
-				}
-
-				if(empty_consumer_node_num <= 0){
-					uniform_int_distribution<int> d2(0,NodeNum - count - 1);
-					int to_swap2 = d2(generator);
-					for(size_t i = 0;i < bits_size;i++){
-						if(!fly.newbits[i]){
-							if(c == to_swap2){
-								pos2 = i;
-								break;
-							}
-							c++;
-						}	
-					}
-
-				}else{
-					int c_to_open = uniform_int_distribution<int>(0,
-					empty_consumer_node_num - 1)(generator);
-
-					for(size_t i = 0;i < bits_size;i++){
-						if(consumer_map[i] && !fly.newbits[i]){
-							if(c == c_to_open){
-								pos2 = i;
-								break;
-							}
-							c++;
+						if(c == c_to_open){
+							pos2 = i;
+							break;
 						}
+						c++;
 					}
 				}
+			}
 
-				if(pos1 < 0)
-					cout << "error! " << pos1 << " to_swap: " << to_swap << " count " << count << endl;
+			if(pos1 < 0)
+				cout << "error! " << pos1 << " to_swap: " << to_swap << " count " << count << endl;
 				
-				if(pos2 < 0)
-					cout << "error " << pos2 << " " << empty_consumer_node_num << endl;
+			if(pos2 < 0)
+				cout << "error " << pos2 << " " << empty_consumer_node_num << endl;
 
-				swap(fly.newbits[pos1],fly.newbits[pos2]);
+			swap(fly.newbits[pos1],fly.newbits[pos2]);
+			}
+			else{
+            int count = fly.count();
+			//cout << "count : " << count << endl;
+			uniform_int_distribution<int> d(0,count - 1);
+
+			int to_swap = d(generator);
+
+			int pos1 = -1;
+
+			size_t bits_size = fly.newbits.size();
+			int c = 0;
+			for(size_t i = 0;i < bits_size;i++){
+				if(fly.newbits[i]){
+					if(c == to_swap){
+						pos1 = i;
+						break;
+					}
+					c++;
+				}	
+			}
+
+			c = 0;
+			int pos2 = -1;
+
+			vector<int> neighbours;
+
+			int offset = lr.G.array_Vertex2Edge_offset[pos1];
+		    int Esize = lr.G.array_Vertex2Edge_len[pos1];
+
+			for(int i = 0;i < Esize;i++){
+				int e = lr.G.mem.array_Vertex_EdgesOut[offset + i];
+				if(e < 0)
+			        break;
+			    int u = lr.G.mem.array_Edge_to[e];
+				if(u < 0)
+				    continue;
+				if(!fly.newbits[u]){
+					neighbours.push_back(u);
+				}
+			}
+
+			if(neighbours.size() == 0){
+				return;
+			}
+			else{
+				uniform_int_distribution<int> d2(0,neighbours.size() - 1);
+			    pos2 = d2(generator);
+			}
+
+			
+
+			if(pos1 < 0)
+				cout << "error! " << pos1 << " to_swap: " << to_swap << " count " << count << endl;
+				
+			if(pos2 < 0)
+				cout << "error " << pos2 << endl;
+
+			swap(fly.newbits[pos1],fly.newbits[pos2]);
 			}
 		}
-#endif
 	}
 }
 
@@ -464,14 +410,14 @@ void FireflySolver::optimize(int stop_round){
 		for(size_t i = 0;i < population;i++){
 			auto& fly = Fireflies[i];
 			fly.newbits = fly.bits;
-			if(false && i > Fireflies.size()/2){
+			if(i > 10){
 				//xj != null
 				//int c_site = Get_Closer(Fireflies,i,1);
 				//Beta_step(fly,Fireflies[c_site]);
 				//Alpha2_step(fly,Fireflies[c_site]);
 				Beta_step(fly,Fireflies[i - 1]);
 				
-				//Alpha_step(fly);
+				Alpha_step(fly);
 			}
 			else if(i > 0){
 				fly = Fireflies[0];
