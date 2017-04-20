@@ -298,6 +298,15 @@ public:
 		set_Edge(id2,to,from,bandwidth,-cost,id1,true);
 	}
 
+	void add_Edge_without_Reverse(int from,
+	    int to,
+	    int bandwidth,
+	    int cost){
+		int id1 = GetAnID();
+		
+		set_Edge(id1,from,to,bandwidth,cost,-1,false);
+	}
+
 	void push_EdgesOut(int vertexid, int edgeid){
 		int size = array_Vertex2Edge_len[vertexid];
 		for(int i = 0;i < size;i++){

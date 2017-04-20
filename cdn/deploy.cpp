@@ -11,6 +11,8 @@
 
 #include "Timer.h"
 #include "zkw.h"
+#include "BnB.h"
+#include "Simplex.h"
 #include <random>
 #include <algorithm>
 
@@ -32,7 +34,7 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 
 
 
-void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
+void deploy_server2(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	Timer::getInstance().start();
 	//Timer::getInstance().set(80);
 	Timer::getInstance().set(88500);
@@ -42,11 +44,16 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 
     
 	Relax init_optimizer(G);
-	init_optimizer.optimize();
+	int cost = init_optimizer.optimize();
 	
 	
 	SSPA2 optimizer(G);
 
+	BnB solver(optimizer,G.VertexNum);
+	solver.init(cost,init_optimizer.get_result());
+	solver.optimize();
+
+    /*
 	FireflySolver solver(optimizer,20,0.01,1,G.VertexNum);
 	solver.init(init_optimizer.get_result());
 	
@@ -55,7 +62,7 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	}
 	
 	solver.optimize(100000);
-	
+	*/
 	/*
 	auto test = init_optimizer.postOptimize();
 	for(auto id:test){
@@ -70,10 +77,26 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	solver.optimize(100000);
 	*/
 	
-	cout << "visited size " << solver.tabu.size() << " " << optimizer.counter << endl;
+	//cout << "visited size " << solver.tabu.size() << " " << optimizer.counter << endl;
 	G.restore_globalmin();
 	write_result(G.to_String().c_str(), filename);
 	//write_result(G.to_String().c_str(),filename);
+}
+
+
+void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
+	Timer::getInstance().start();
+	//Timer::getInstance().set(80);
+	Timer::getInstance().set(88500);
+	Graph G;
+	parse(topo,line_num,G);
+
+	RSM_Model RSM(G);
+	RSM.init();
+	RSM.optimize();
+	
+	//G.restore_globalmin();
+	//write_result(G.to_String().c_str(), filename);
 }
 
 
