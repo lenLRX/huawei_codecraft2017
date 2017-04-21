@@ -2,7 +2,91 @@
 #include <cassert>
 #include <cmath>
 
+static const double epsilon1 = 0.00001;
+static const double epsilon2 = 0.00000001;
+
+void printX(vector<int> x) {
+	cout << "{";
+	for (size_t j = 0; j < x.size(); j++) {
+		cout << " x" << x[j];
+	}
+	cout << " }";
+}
+
+void printVector(vector<double> v) {
+	for (size_t f = 0; f < v.size(); f++) {
+		cout << v[f] << "\t";
+	}
+	cout << endl;
+}
+
+double determVar(int number, vector<int> xb, vector<int> xn, 
+	vector<double> bbar) {	
+
+	for (size_t i = 0; i < xn.size(); i++) {
+		if (xn[i] == number)
+			return 0;
+	}
+	for (size_t j = 0; j < xb.size(); j++) {
+		if (xb[j] == number) {
+			if (fabs(bbar[j]) > 0.001) {
+				return bbar[j];
+			}
+			else {
+				return 0;
+			}
+		}
+	}
+
+	return -1; // Will be obvious if a mistake
+}
+
+RSM_Model RSM_Model::Dual(){
+	
+	RSM_Model dual(G);
+	/*
+	dual.m = n;
+	dual.n = m;
+	dual.mn = m + n;
+
+	dual.init_space();
+	for(int i = 0;i < dual.b.size();i++){
+		dual.b[i] = c[i];
+	}
+	
+	for(int i = 0;i < b.size();i++){
+		dual.c[i] = b[i];
+	}
+	//dual.c = b;
+
+	for (size_t row = 0; row < m; ++row) {
+        for (size_t col = 0; col < n; ++col) {
+            dual.A[row * dual.m + col] = A[col * (m) + row];
+        }
+    }
+
+	dual.init_slack();
+
+	dual.optimize();
+	*/
+	return dual;
+}
+
+void RSM_Model::init_space(){
+	//A = vector<vector<double>>(mn, vector<double>(m));
+	A = SparseMatrix<double>(mn);
+
+	b = vector<double>(m);
+	c = vector<double>(mn,0.0);
+	cbar = vector<double>(mn);
+	bbar = vector<double>(m);
+	y = vector<double>(m);
+	xb = vector<int>(m);
+	xn = vector<int>(n);
+}
+
 void RSM_Model::init(){
+	init_space();
 	for(int v = 0;v < G.VertexNum;v++){
 		vector<int> EdgesIn,EdgesOut;
 		int Esize = G.array_Vertex2Edge_len[v];
@@ -31,233 +115,250 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
     const vector<int>& EdgesOut,int vid,int d){
 
 	for(int in:EdgesIn){
-		A[vid][in] = -1;
+		A.row[in * m + vid] = -1;
 	}
 
 	for(int out:EdgesOut){
-		A[vid][out] = 1;
+		A[out * m + vid] = 1;
 	}
 
 	for(int i = EdgeNum + vid * G.ServerLvlNum;
 	    i < EdgeNum + (vid + 1) * G.ServerLvlNum;i++){
-		A[vid][i] = -1;
+		A[i * m + vid] = -G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum];
 	}
 
+	//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + vid) * m + vid] = 1;//slack
+
 	b[vid] = -d;
+}
+
+void RSM_Model::init_slack(){
+	for (int i = 0; i < m; i++) { // A & b
+	    //if(b[i] > 0){
+			A[(i + n) * m + i] = 1;
+		    Ab[i * m + i] = 1;
+		//}
+		/*
+		else{
+			//reverse Sign
+			for(int j = 0;j < n;j++){
+				A[j * m + i] *= -1;
+			}
+
+			A[(i + n) * m + i + 1] = -1;
+		    Ab[i * m + i ] = -1;
+			b[i] *= -1;
+		}
+		*/
+		
+	}	
+	
+	
 }
 
 void RSM_Model::SetupObjectFunc(){
 	int i = 0;
 	for(;i < EdgeNum;i++){
-		cbar[i] = c[i] = G.mem.array_Edge_cost[i];
-		xn[i] = i + 1;
+		c[i] = G.mem.array_Edge_cost[i];
 
         //UB of Edge
-		A[i][G.VertexNum + i] = 1;
+		A[i * m + G.VertexNum + i] = 1;
+		//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + G.VertexNum + i) * m + G.VertexNum + i] = -1;//slack
+		//A[(i + G.VertexNum * G.ServerLvlNum + EdgeNum) * m + G.VertexNum + i] = 1;//bigM
 		b[G.VertexNum + i] = G.mem.array_Edge_bandwidth[i];
 	}
-
-	for(;i < EdgeNum + G.VertexNum;i++){
-		cbar[i] = c[i] = G.const_array_Vertex_Server_Cost[i - EdgeNum]
-		    + G.const_array_Server_Cost[G.ServerLvlNum - 1];
-		xn[i] = i + 1;
+    
+	//n coef
+	for(;i < EdgeNum + G.VertexNum * G.ServerLvlNum;i++){
+		c[i] = G.const_array_Vertex_Server_Cost[(i - EdgeNum) / G.ServerLvlNum]
+		    + G.const_array_Server_Cost[(i - EdgeNum) % G.ServerLvlNum];
 	}
 
 	for(int i = 0;i < G.VertexNum;i++){
 		for(int j = 0;j < G.ServerLvlNum;j++){
-			A[j][G.VertexNum + EdgeNum + i] = 1;
+			A[(i * G.ServerLvlNum + j + EdgeNum) * m + G.VertexNum + EdgeNum + i] = 1;
 		}
+
+		//A[(EdgeNum + G.VertexNum + G.VertexNum * G.ServerLvlNum + EdgeNum + G.VertexNum + EdgeNum + i) * m + G.VertexNum + EdgeNum + i] = -1;//slack
+		//A[(EdgeNum + i + G.VertexNum * G.ServerLvlNum + EdgeNum) * m + G.VertexNum + EdgeNum + i] = 1;//bigM
 		//no more than 1 server in a vertex
+		// -1 for change sign to >=
 		b[G.VertexNum + EdgeNum + i] = 1;
 	}
 
-	for(int i = n;i < mn;i++){
-		xb[i - n] = i + 1;
-	}
-
-	for (int i = 0; i < m; i++) { // A & b
-	    if(b[i] > 0){
-			A[i + n][i] = 1;
-		    Ab[i][i] = 1;
-		}
-		else{
-			//reverse Sign
-			for(int j = 0;j < n;j++){
-				A[j][i] *= -1;
-			}
-
-			A[i + n][i] = -1;
-		    Ab[i][i] = -1;
-			b[i] *= -1;
-		}
-		
-	}	
-	bbar = b;
-
-
+    //init_slack();
+	
 }
 
 void RSM_Model::optimize(){
+	cbar = c;
+	for (size_t j = 0; j < mn; j++) { // c & x
+		if (j < n) {
+			xn[j] = j;
+		}
+		else {
+			xb[j - n] = j;
+		}
+	}
+	bbar = b;
+
+	init_slack();
+	
+#ifdef DBG_PRINT
+	cout << endl << "--- output ---" << endl << endl;
+	cout << "m = " << m << "\tn = " << n << endl;
+
+	cout << "c = ";
+	printVector(c);
+
+	cout << "b = ";
+	printVector(b);
+#endif
+	
+	
+
 	// Work
 	bool finished = false;
 	size_t iteration = 1;
 	int enter, leave, col;
 
-	while (!finished && iteration <= MAX_ITERATIONS	) {		
+	double opt_value = 0.0;
 
-		enter = GetHighest(cbar);
-		if (enter == -1) { // if none, we're done here
-			double z = IP(y, b);
-			
-			cout << endl << endl << "Optimal value of ";
-			cout << z << " has been reached." << endl;
+	while (!finished && iteration <= MAX_ITERATIONS	) {
 
-            /*
-			cout << "Original:";
-			for (size_t i = 1; i <= n; i++) {
-				cout << "\tx" << i << "=";
-				cout << determVar(i, xb, xn, bbar);
-			}
-
-			cout << endl << "Slack:\t";
-			for (size_t i = n+1; i <= mn; i++) {
-				cout << "\tx" << i << "=";
-				cout << determVar(i, xb, xn, bbar);
+#ifdef DBG_PRINT
+		cout << "A =" << endl;
+		for (size_t i = 0; i < m; i++) {
+			for (size_t j = 0; j < mn; j++) {
+				cout << A[j * m + i] << "\t";
 			}
 			cout << endl;
-			*/
-			finished = true;
-			break;
-		}		
-		cout << endl <<"Entering variable is x" << xn[enter] << endl;
+		}
+		cout << endl << endl;
+		cout << "N = ";				// print null vars
+		printX(xn);
+		cout << "\tB = ";			// print basic vars
+		printX(xb);
 
-		// update d (abarj)
-		abarj = A[xn[enter] - 1];
-		double vp;
-		for (int g = 0; g < (int)iteration-1; g++) {
-			col = (int)etaFile[g][m];
-			vp = abarj[col] / etaFile[g][col];
-			abarj[col] = vp;			
+		cout << endl << "bbar =\t";	// print bbar
+		printVector(bbar);
 
-			for (size_t i = 0; i < m; i++) {
-				if (i != col) {
-					abarj[i] -= etaFile[g][i] * abarj[col];
+		cout << endl << "y =\t";	// print y
+		printVector(y);
+
+		cout << "cbar\t";			// print cbar
+		for (size_t f = 0; f < n; f++) {
+			cout << "x" << xn[f] << " " << cbar[f] << "\t";
+		}
+#endif
+		int pivot_row = GetSmallest(bbar);
+		if (pivot_row == -1) { // if none, we're done here
+			//double z = IP(y, b);
+	
+			cout << endl << endl << "Optimal value of ";
+			cout << opt_value << " has been reached." << endl;
+
+			for(int i = 0;i < n;i++){
+				for(int j = 0;j < m;j++){
+					if(xb[j] == i){
+						cout << "x" << i << " = " << bbar[j] << endl;
+					}
 				}
 			}
+			
+			finished = true;
+			break;
 		}
-		/*
-		cout << "abarj =\t";
-		printVector(abarj);
-		*/
+#ifdef DBG_PRINT	
+		cout <<"pivot row is" << pivot_row << endl;
+#endif
+		int pivot_col = find_pivot_col(pivot_row);
 
-		// Determine leaving variable (where 7/10 people mess up)
-		leave = ratioLeaving(bbar, abarj, xb);
-		if (leave == -1) {
+		if (pivot_col == -1) {
 			finished = true;
 			cout << "Solution is unbounded" << endl;			
 			break;
 		}
-		t = bbar[leave] / abarj[leave];
 
-		cout << "Leaving variable is x" << xb[leave] << endl;
+		xb[pivot_row] = pivot_col;
+#ifdef DBG_PRINT
+		cout  <<"pivot col is" << pivot_col << endl;
+#endif
+		//divid row by pivot so it will be 1
 
-		// Print new E col
-		//cout << "E" << iteration << " = column " << leave+1 << ":\t";
-		//printVector(abarj);
-
-		// Update eta file (first input is E1 not E0)
-		for (size_t i = 0; i < abarj.size(); i++) {
-			etaFile[iteration - 1][i] = abarj[i];
-		}
-		etaFile[iteration - 1][m] = leave;
-			
-		swap(xb[leave], xn[enter]); // Swap entering and leaving
-
-		// Update y
-		for (size_t i = 0; i < m; i++) { 
-			y[i] = c[xb[i] - 1];
-		}		
-		
-		for (int g = iteration - 1; g >= 0; g--) {	
-			col = (int)etaFile[g][m];			
-			for (size_t i = 0; i < m; i++) {
-				if (i != col) {
-					y[col] -= etaFile[g][i] * y[i];
-				}
-			}
-
-			y[col] /= etaFile[g][col];			
+		double pivot_value = A[pivot_col * m + pivot_row];
+#ifdef DBG_PRINT
+		cout << "pivot_value " << pivot_value << endl;
+#endif
+		for(int i = 0;i < mn;i++){
+			A[i * m + pivot_row] /= pivot_value;
 		}
 
-		// Update bbar		
-		for (size_t i = 0; i < m; i++) {			
-			bbar[i] -= t * abarj[i];
-			if (fabs(bbar[i]) < 0.001) {
-				bbar[i] = 0;
+		bbar[pivot_row] /= pivot_value;
+
+		//canceling pivot col
+		for(int i = 0;i < m;i++){
+			if(i == pivot_row)
+			    continue;
+			double t = - A[pivot_col * m + i] / pivot_value;
+
+			for(int j = 0;j < mn;j++){
+				A[j * m + i] += t * A[j * m + pivot_row];
 			}
-			if (bbar[i] < 0) { // Sign constraints
-				finished = true;
-				cout << "The linear program is infeasible:" << endl;
-				break;
-			}
+			bbar[i] += t * bbar[pivot_row];
 		}
-		bbar[leave] = t;			
 
-		// Update cbar		
-		for (size_t j = 0; j < n; j++) {
-			cbar[j] = c[xn[j] - 1] - IP(y, A[xn[j] - 1]);			
-		}		
+		//update cbar
 
-		// Increase iteration for y and d updates and max iterations
+		double ct = -cbar[pivot_col] / pivot_value;
+
+		for(int j = 0;j < mn;j++){
+			cbar[j] += ct * A[j * m + pivot_row];
+		}
+
+		opt_value += ct * bbar[pivot_row];
+
+		cout << iteration << endl;
 		iteration++; 
 	}	
 }
 
-//innerProduct
-double RSM_Model::IP(const vector<double>& a,const vector<double>& b) {
-	double result = 0;	
-	for (size_t h = 0; h < b.size(); h++) {
-		result += a[h] * b[h];
-	}	
+int RSM_Model::find_pivot_col(int pivot_row){
+	int pos = -1;
+	double ratio;
+	double smallest = 0;
+	bool first = true;
+	for(int i = 0;i < mn;i++){
+		//ignore sign
+		double a = fabs(A[i * m + pivot_row]);
+		double _c = fabs(c[i]);
+		if(_c > 0.0000001 && a > 0.0000001){
+			ratio = a / _c;
+			if(first || ratio < smallest){
+				first = false;
+				smallest = ratio;
+				pos = i;
+			}
+		}
 
-	return result;
+		
+	}
+	//cout << "smallest ratio " << smallest << endl;
+	return pos;
 }
 
-int RSM_Model::GetHighest(const vector<double>& cbar) {
+int RSM_Model::GetSmallest(const vector<double>& bbar) {
 	int result = -1;
-	double highest = 0;
+	double smallest = 0;
 
-	for (size_t i = 0; i < cbar.size(); i++) {
-		if (cbar[i] > highest) {
-			highest = cbar[i];
+	for (size_t i = 0; i < bbar.size(); i++) {
+		if (bbar[i] < smallest) {
+			smallest = bbar[i];
 			result = i;
 		}		
 	}
 
-	return result;
-}
-
-int RSM_Model::ratioLeaving(const vector<double>& b,
-    const vector<double>& aj, const vector<int>& xb){
-	int result = -1;
-	double lowest = 0;
-	double ratio;
-	bool first = true;
-	
-	//cout << "ratio";
-	for (size_t j = 0; j < b.size(); j++) {
-		if (aj[j] > 0) {
-			ratio = b[j] / aj[j];
-			//cout << "\tx" << xb[j] << " " << ratio;
-			
-			if (ratio < lowest || first) {				
-				lowest = ratio;
-				result = j;
-				first = false;
-			}
-		}
-	}
-	//cout << endl;
+	//cout << "smallest " << smallest << endl;
 
 	return result;
 }

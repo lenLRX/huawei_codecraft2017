@@ -89,11 +89,12 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	//Timer::getInstance().set(80);
 	Timer::getInstance().set(88500);
 	Graph G;
-	parse(topo,line_num,G);
+	parse2(topo,line_num,G);
 
 	RSM_Model RSM(G);
 	RSM.init();
 	RSM.optimize();
+	//RSM.Dual();
 	
 	//G.restore_globalmin();
 	//write_result(G.to_String().c_str(), filename);

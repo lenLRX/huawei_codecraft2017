@@ -2,40 +2,33 @@
 #define __SIMPLEX_H__
 
 #include "optimizer.h"
+#include <map>
 
+template<typename T = double>
 class SparseMatrix{
 public:
+    SparseMatrix(int row_num){
+		rows.resize(row_num);
+	}
 
+    vector<map<int,T>> rows;
 };
 
 class RSM_Model{
 public:
     RSM_Model(Graph& G):G(G){
-		EdgeNum = G.EdgeNum * 2;
+		EdgeNum = G.EdgeNum;
 		n = G.VertexNum * G.ServerLvlNum + EdgeNum;
 		m = G.VertexNum * 2 + EdgeNum;
 
 		mn = m + n;
-		//A = vector<vector<double>>(mn, vector<double>(m));
-		A = vector<double>(mn*m);
-
-		b = vector<double>(m);
-		c = vector<double>(mn,0.0);
-		cbar = vector<double>(n);
-		abarj = vector<double>(m);
-		//Ab = vector<vector<double>>(m, vector<double>(m));
-		Ab = vector<double>(m * m);
-		//e = vector<vector<double>>(m, vector<double>(m));
-		e = vector<double>(m * m);
-		//etaFile = vector<vector<double>>(MAX_ITERATIONS, vector<double>(m + 1));
-		etaFile = vector<double>(MAX_ITERATIONS * (m + 1));
-		bbar = vector<double>(m);
-		y = vector<double>(m);
-		xb = vector<int>(m);
-		xn = vector<int>(n);
 	}
 
+	RSM_Model Dual();
+
 	void init();
+	void init_space();
+	void init_slack();
 
 	void optimize();
 
@@ -46,19 +39,16 @@ public:
 
     void SetupObjectFunc();
 
-	double IP(const vector<double>& a,const vector<double>& b);
 
-	int GetHighest(const vector<double>& cbar);
-
-	int ratioLeaving(const vector<double>& b,
-        const vector<double>& aj, const vector<int>& xb);
+	int GetSmallest(const vector<double>& bbar);
+	int find_pivot_col(int pivot_row);
 
 	vector<double> x;
     vector<double> c;
 
 
     //vector<vector<double>> A;
-	vector<double> A;
+	SparseMatrix<double> A;
 	vector<double> b;
 
 	vector<double> cbar;				// c
@@ -68,19 +58,18 @@ public:
 	//vector<vector<double>> e;								// E
 	vector<double> e;
 	//vector<vector<double>> etaFile;//Eta File
-	vector<double> etaFile;
 	vector<double> bbar;				// b
 	vector<double> y;										// y
 	vector<int> xb;
 	vector<int> xn;						// x
 	double t;									// for getting bbar
 
-    int MAX_ITERATIONS = 100;
+    int MAX_ITERATIONS = 1000;
 	int EdgeNum;
 	int n;//num vars
 	int m;//num constraints
 	int mn;
-	int BigM;
+	int BigM = 10000000;
 	Graph& G;
 };
 
