@@ -48,7 +48,7 @@ public:
 
 
     //vector<vector<double>> A;
-	SparseMatrix<double> A;
+	vector<double> A;
 	vector<double> b;
 
 	vector<double> cbar;				// c

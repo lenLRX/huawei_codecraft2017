@@ -1,7 +1,7 @@
 #include "Simplex.h"
 #include <cassert>
 #include <cmath>
-
+//#define DBG_PRINT
 static const double epsilon1 = 0.00001;
 static const double epsilon2 = 0.00000001;
 
@@ -74,7 +74,7 @@ RSM_Model RSM_Model::Dual(){
 
 void RSM_Model::init_space(){
 	//A = vector<vector<double>>(mn, vector<double>(m));
-	A = SparseMatrix<double>(mn);
+	A = vector<double>(mn * m);
 
 	b = vector<double>(m);
 	c = vector<double>(mn,0.0);
@@ -115,16 +115,16 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
     const vector<int>& EdgesOut,int vid,int d){
 
 	for(int in:EdgesIn){
-		A.row[in * m + vid] = -1;
+		A[vid * mn + in] = -1;
 	}
 
 	for(int out:EdgesOut){
-		A[out * m + vid] = 1;
+		A[vid * mn + out] = 1;
 	}
 
 	for(int i = EdgeNum + vid * G.ServerLvlNum;
 	    i < EdgeNum + (vid + 1) * G.ServerLvlNum;i++){
-		A[i * m + vid] = -G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum];
+		A[vid * mn + i] = -G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum];
 	}
 
 	//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + vid) * m + vid] = 1;//slack
@@ -135,8 +135,7 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
 void RSM_Model::init_slack(){
 	for (int i = 0; i < m; i++) { // A & b
 	    //if(b[i] > 0){
-			A[(i + n) * m + i] = 1;
-		    Ab[i * m + i] = 1;
+			A[(i) * mn + i + n] = 1;
 		//}
 		/*
 		else{
@@ -162,7 +161,7 @@ void RSM_Model::SetupObjectFunc(){
 		c[i] = G.mem.array_Edge_cost[i];
 
         //UB of Edge
-		A[i * m + G.VertexNum + i] = 1;
+		A[(G.VertexNum + i) * mn + i] = 1;
 		//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + G.VertexNum + i) * m + G.VertexNum + i] = -1;//slack
 		//A[(i + G.VertexNum * G.ServerLvlNum + EdgeNum) * m + G.VertexNum + i] = 1;//bigM
 		b[G.VertexNum + i] = G.mem.array_Edge_bandwidth[i];
@@ -176,7 +175,7 @@ void RSM_Model::SetupObjectFunc(){
 
 	for(int i = 0;i < G.VertexNum;i++){
 		for(int j = 0;j < G.ServerLvlNum;j++){
-			A[(i * G.ServerLvlNum + j + EdgeNum) * m + G.VertexNum + EdgeNum + i] = 1;
+			A[(G.VertexNum + EdgeNum + i) * mn + i * G.ServerLvlNum + j + EdgeNum] = 1;
 		}
 
 		//A[(EdgeNum + G.VertexNum + G.VertexNum * G.ServerLvlNum + EdgeNum + G.VertexNum + EdgeNum + i) * m + G.VertexNum + EdgeNum + i] = -1;//slack
@@ -191,6 +190,9 @@ void RSM_Model::SetupObjectFunc(){
 }
 
 void RSM_Model::optimize(){
+	for(int i = 0;i < n;i++){
+		c[i] *= -1;
+	}
 	cbar = c;
 	for (size_t j = 0; j < mn; j++) { // c & x
 		if (j < n) {
@@ -230,7 +232,7 @@ void RSM_Model::optimize(){
 		cout << "A =" << endl;
 		for (size_t i = 0; i < m; i++) {
 			for (size_t j = 0; j < mn; j++) {
-				cout << A[j * m + i] << "\t";
+				cout << A[i * mn + j] << "\t";
 			}
 			cout << endl;
 		}
@@ -270,7 +272,7 @@ void RSM_Model::optimize(){
 			break;
 		}
 #ifdef DBG_PRINT	
-		cout <<"pivot row is" << pivot_row << endl;
+		cout <<"pivot row is " << pivot_row << endl;
 #endif
 		int pivot_col = find_pivot_col(pivot_row);
 
@@ -282,16 +284,16 @@ void RSM_Model::optimize(){
 
 		xb[pivot_row] = pivot_col;
 #ifdef DBG_PRINT
-		cout  <<"pivot col is" << pivot_col << endl;
+		cout  <<"pivot col is " << pivot_col << endl;
 #endif
 		//divid row by pivot so it will be 1
 
-		double pivot_value = A[pivot_col * m + pivot_row];
+		double pivot_value = A[pivot_row * mn + pivot_col];
 #ifdef DBG_PRINT
 		cout << "pivot_value " << pivot_value << endl;
 #endif
 		for(int i = 0;i < mn;i++){
-			A[i * m + pivot_row] /= pivot_value;
+			A[pivot_row * mn + i] /= pivot_value;
 		}
 
 		bbar[pivot_row] /= pivot_value;
@@ -300,10 +302,10 @@ void RSM_Model::optimize(){
 		for(int i = 0;i < m;i++){
 			if(i == pivot_row)
 			    continue;
-			double t = - A[pivot_col * m + i] / pivot_value;
+			double t = - A[i * mn + pivot_col] / pivot_value;
 
 			for(int j = 0;j < mn;j++){
-				A[j * m + i] += t * A[j * m + pivot_row];
+				A[i * mn + j] += t * A[pivot_row * mn + j];
 			}
 			bbar[i] += t * bbar[pivot_row];
 		}
@@ -313,7 +315,7 @@ void RSM_Model::optimize(){
 		double ct = -cbar[pivot_col] / pivot_value;
 
 		for(int j = 0;j < mn;j++){
-			cbar[j] += ct * A[j * m + pivot_row];
+			cbar[j] += ct * A[pivot_row * mn + j];
 		}
 
 		opt_value += ct * bbar[pivot_row];
@@ -330,7 +332,7 @@ int RSM_Model::find_pivot_col(int pivot_row){
 	bool first = true;
 	for(int i = 0;i < mn;i++){
 		//ignore sign
-		double a = fabs(A[i * m + pivot_row]);
+		double a = fabs(A[pivot_row * mn + i]);
 		double _c = fabs(c[i]);
 		if(_c > 0.0000001 && a > 0.0000001){
 			ratio = a / _c;
