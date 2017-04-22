@@ -7,6 +7,7 @@
 template<typename T = double>
 class SparseMatrix{
 public:
+    SparseMatrix()=default;
     SparseMatrix(int row_num){
 		rows.resize(row_num);
 	}
@@ -48,7 +49,7 @@ public:
 
 
     //vector<vector<double>> A;
-	vector<double> A;
+	SparseMatrix<double> A;
 	vector<double> b;
 
 	vector<double> cbar;				// c
