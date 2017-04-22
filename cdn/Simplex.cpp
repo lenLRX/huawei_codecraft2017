@@ -1,7 +1,7 @@
 #include "Simplex.h"
 #include <cassert>
 #include <cmath>
-//#define DBG_PRINT
+#define DBG_PRINT
 static const double epsilon1 = 0.00001;
 static const double epsilon2 = 0.00000001;
 
@@ -73,7 +73,6 @@ RSM_Model RSM_Model::Dual(){
 }
 
 void RSM_Model::init_space(){
-	//A = vector<vector<double>>(mn, vector<double>(m));
 	A = SparseMatrix<double>(m);
 
 	b = vector<double>(m);
@@ -115,16 +114,16 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
     const vector<int>& EdgesOut,int vid,int d){
 
 	for(int in:EdgesIn){
-		A.rows[vid][in] = -1;
+		A.rows[vid].push_back(pair<int,double>(in,-1));
 	}
 
 	for(int out:EdgesOut){
-		A.rows[vid][out] = 1;
+		A.rows[vid].push_back(pair<int,double>(out,1));
 	}
 
 	for(int i = EdgeNum + vid * G.ServerLvlNum;
 	    i < EdgeNum + (vid + 1) * G.ServerLvlNum;i++){
-		A.rows[vid][i] = -G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum];
+		A.rows[vid].push_back(pair<int,double>(i,-G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum]));
 	}
 
 	//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + vid) * m + vid] = 1;//slack
@@ -134,7 +133,7 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
 
 void RSM_Model::init_slack(){
 	for (int i = 0; i < m; i++) { // A & b
-		A.rows[i][i + n] = 1;
+	    A.rows[i].push_back(pair<int,double>(i + n,1));
 	}	
 	
 	
@@ -146,7 +145,7 @@ void RSM_Model::SetupObjectFunc(){
 		c[i] = G.mem.array_Edge_cost[i];
 
         //UB of Edge
-		A.rows[G.VertexNum + i][i] = 1;
+		A.rows[G.VertexNum + i].push_back(pair<int,double>(i,1));
 		//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + G.VertexNum + i) * m + G.VertexNum + i] = -1;//slack
 		//A[(i + G.VertexNum * G.ServerLvlNum + EdgeNum) * m + G.VertexNum + i] = 1;//bigM
 		b[G.VertexNum + i] = G.mem.array_Edge_bandwidth[i];
@@ -160,7 +159,7 @@ void RSM_Model::SetupObjectFunc(){
 
 	for(int i = 0;i < G.VertexNum;i++){
 		for(int j = 0;j < G.ServerLvlNum;j++){
-			A.rows[G.VertexNum + EdgeNum + i][i * G.ServerLvlNum + j + EdgeNum] = 1;
+			A.rows[G.VertexNum + EdgeNum + i].push_back(pair<int,double>(i * G.ServerLvlNum + j + EdgeNum,1));
 		}
 
 		//A[(EdgeNum + G.VertexNum + G.VertexNum * G.ServerLvlNum + EdgeNum + G.VertexNum + EdgeNum + i) * m + G.VertexNum + EdgeNum + i] = -1;//slack
@@ -214,14 +213,6 @@ void RSM_Model::optimize(){
 	while (!finished) {
 
 #ifdef DBG_PRINT
-		cout << "A =" << endl;
-		for (size_t i = 0; i < m; i++) {
-			for (size_t j = 0; j < mn; j++) {
-				cout << A[i * mn + j] << "\t";
-			}
-			cout << endl;
-		}
-		cout << endl << endl;
 		cout << "N = ";				// print null vars
 		printX(xn);
 		cout << "\tB = ";			// print basic vars
@@ -259,7 +250,10 @@ void RSM_Model::optimize(){
 #ifdef DBG_PRINT	
 		cout << endl << "pivot row is " << pivot_row << endl;
 #endif
-		int pivot_col = find_pivot_col(pivot_row);
+		pair<int,int> offset_col = find_pivot_col(pivot_row);
+
+		int pivot_offset = offset_col.first;
+		int pivot_col = offset_col.second;
 
 		if (pivot_col == -1) {
 			finished = true;
@@ -273,13 +267,15 @@ void RSM_Model::optimize(){
 #endif
 		//divid row by pivot so it will be 1
 
-		double pivot_value = A.rows[pivot_row][pivot_col];
+		double pivot_value = A.rows[pivot_row][pivot_offset].second;
 #ifdef DBG_PRINT
 		cout << "pivot_value " << pivot_value << endl;
 #endif
-        bbar[pivot_row] /= pivot_value;
-		for(auto& pa:A.rows[pivot_row]){
+        
+		auto A_buffer = SparseMatrix<double>(m);
+		for(pair<int,double> pa:A.rows[pivot_row]){
 			pa.second /= pivot_value;
+			A_buffer.rows[pivot_row].push_back(pa);
 		}
 
 
@@ -290,15 +286,77 @@ void RSM_Model::optimize(){
 		for(int i = 0;i < m;i++){
 			if(i == pivot_row)
 			    continue;
-			auto pivot_col_at_any_row = A.rows[i].find(pivot_col);
-			if(pivot_col_at_any_row == A.rows[i].end())
+			
+			pair<int,double> pivot_col_at_any_row = pair<int,double>(-1,0.0);
+			size_t row_size = A.rows[i].size();
+			for(size_t j = 0;j < row_size;j++){
+		        const auto& pa = A.rows[i][j];
+				if(pa.first == pivot_col){
+					pivot_col_at_any_row = pa;
+					break;
+				}
+			}
+
+
+			if(pivot_col_at_any_row.first == -1)
 			    continue;//it is already 0
 			
-			double t = - pivot_col_at_any_row->second;
+			double t = - pivot_col_at_any_row.second / pivot_value;
 			if(fabs(t)>epsilon1){
 #ifdef DBG_PRINT
                 cout << "canceling col: " << i << " : " << t << endl;
 #endif
+                int pivot_row_size = A.rows[pivot_row].size();
+				int pivot_row_idx = 1;
+				int current_row_size = A.rows[i].size();
+				int current_row_idx = 1;
+
+				while(pivot_row_idx < pivot_row_size 
+				    && current_row_idx < current_row_size){
+					
+					if(A.rows[pivot_row][pivot_row_idx].first 
+					    > A.rows[i][current_row_idx].first){
+						//do sth
+						A_buffer.rows[i].push_back(A.rows[i][current_row_idx]);
+						current_row_idx++;
+					}
+					else if(A.rows[pivot_row][pivot_row_idx].first 
+					    < A.rows[i][current_row_idx].first){
+						A_buffer.rows[i].push_back(
+							pair<int,double>(A.rows[pivot_row][pivot_row_idx].first,
+							t * A.rows[pivot_row][pivot_row_idx].second)
+						);
+						pivot_row_idx++;
+					}
+					else{
+						double _value_insert = 
+						    A.rows[i][current_row_idx].second + t * A.rows[pivot_row][pivot_row_idx].second;
+						//insert if non zero
+						if(fabs(_value_insert) > epsilon1)
+							A_buffer.rows[i].push_back(
+								pair<int,double>(A.rows[pivot_row][pivot_row_idx].first,
+								_value_insert)
+							);
+						current_row_idx++;
+						pivot_row_idx++;
+					}
+				}
+
+				if(pivot_row_idx == pivot_row_size){
+					//job is done for pivot row,check current row.
+					for(;current_row_idx < current_row_size;current_row_idx++){
+						A_buffer.rows[i].push_back(A.rows[i][current_row_idx]);
+					}
+				}
+				else{
+					for(;pivot_row_idx < pivot_row_size;pivot_row_idx++){
+						A_buffer.rows[i].push_back(
+							pair<int,double>(A.rows[pivot_row][pivot_row_idx].first,
+							t * A.rows[pivot_row][pivot_row_idx].second)
+						);
+					}
+				}
+				/*
                 for(auto pivot_iter = A.rows[pivot_row].begin();
 				    pivot_iter != A.rows[pivot_row].end();pivot_iter++){
 					A.rows[i][pivot_iter->first] += t * pivot_iter->second;
@@ -306,6 +364,7 @@ void RSM_Model::optimize(){
 					if(fabs(A.rows[i][pivot_iter->first]) < epsilon1)
 					    A.rows[i].erase(pivot_iter->first);
 				}
+				*/
 				/*
 				for(auto iter = A.rows[i].begin();iter != A.rows[i].end();){
 					auto pivot_iter = A.rows[pivot_row].find(iter->first);
@@ -329,27 +388,33 @@ void RSM_Model::optimize(){
 			
 		}
 
+		bbar[pivot_row] /= pivot_value;
+
 		//update cbar
 
-		double ct = -cbar[pivot_col];
+		double ct = -cbar[pivot_col] / pivot_value;
 
 		for(auto& pa:A.rows[pivot_row]){
 			cbar[pa.first] += ct * pa.second;
 		}
 
 		opt_value += ct * bbar[pivot_row];
+        //swap buffer!
+		A = A_buffer;
 
 		cout << iteration << endl;
 		iteration++; 
 	}	
 }
-
-int RSM_Model::find_pivot_col(int pivot_row){
-	int pos = -1;
+//offset,col
+pair<int,int> RSM_Model::find_pivot_col(int pivot_row){
+	pair<int,int> pos = pair<int,int>(-1,-1);
 	double ratio;
 	double smallest = 0;
 	bool first = true;
-	for(const auto& pa:A.rows[pivot_row]){
+	size_t row_size = A.rows[pivot_row].size();
+	for(size_t i = 0;i < row_size;i++){
+		const auto& pa = A.rows[pivot_row][i];
 		//ignore sign
 		double a = pa.second;
 		if(a < 0){
@@ -363,7 +428,8 @@ int RSM_Model::find_pivot_col(int pivot_row){
 			if(first || ratio < smallest){
 				first = false;
 				smallest = ratio;
-				pos = pa.first;
+				pos.first = i;
+				pos.second = pa.first;
 			}
 		}
 

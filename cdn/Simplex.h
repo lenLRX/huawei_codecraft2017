@@ -12,7 +12,7 @@ public:
 		rows.resize(row_num);
 	}
 
-    vector<map<int,T>> rows;
+    vector<vector<pair<int,T>>> rows;
 };
 
 class RSM_Model{
@@ -42,7 +42,8 @@ public:
 
 
 	int GetSmallest(const vector<double>& bbar);
-	int find_pivot_col(int pivot_row);
+	pair<int,int> find_pivot_col(int pivot_row);
+	//offset,col
 
 	vector<double> x;
     vector<double> c;
