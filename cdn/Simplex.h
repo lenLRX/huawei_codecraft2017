@@ -10,6 +10,9 @@ public:
     SparseMatrix()=default;
     SparseMatrix(int row_num){
 		rows.resize(row_num);
+		for(int i = 0;i < row_num;i++){
+			//rows[i].reserve(100);
+		}
 	}
 
     vector<vector<pair<int,T>>> rows;
@@ -44,6 +47,8 @@ public:
 	int GetSmallest(const vector<double>& bbar);
 	pair<int,int> find_pivot_col(int pivot_row);
 	//offset,col
+
+	void fillGraph();
 
 	vector<double> x;
     vector<double> c;

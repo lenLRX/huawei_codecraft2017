@@ -1,7 +1,8 @@
 #include "Simplex.h"
 #include <cassert>
+#include <algorithm>
 #include <cmath>
-#define DBG_PRINT
+//#define DBG_PRINT
 static const double epsilon1 = 0.00001;
 static const double epsilon2 = 0.00000001;
 
@@ -126,6 +127,12 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
 		A.rows[vid].push_back(pair<int,double>(i,-G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum]));
 	}
 
+    //we must ensure the order
+    sort(A.rows[vid].begin(),A.rows[vid].end(),
+	[](const pair<int,double>& lhs, const pair<int,double>& rhs)->bool{
+		return lhs.first < rhs.first;
+	});
+
 	//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + vid) * m + vid] = 1;//slack
 
 	b[vid] = -d;
@@ -213,6 +220,21 @@ void RSM_Model::optimize(){
 	while (!finished) {
 
 #ifdef DBG_PRINT
+        cout << "A =" << endl;
+		for (size_t i = 0; i < m; i++) {
+			for (size_t j = 0; j < mn; j++) {
+				bool got = false;
+				for(size_t k = 0;k < A.rows[i].size();k++){
+					if(A.rows[i][k].first == j){
+						got = true;
+					    cout << A.rows[i][k].second << "\t";
+					}
+				}
+				if(!got)
+				    cout << int(0) << "\t";
+			}
+			cout << endl;
+		}
 		cout << "N = ";				// print null vars
 		printX(xn);
 		cout << "\tB = ";			// print basic vars
@@ -232,6 +254,7 @@ void RSM_Model::optimize(){
 		int pivot_row = GetSmallest(bbar);
 		if (pivot_row == -1) { // if none, we're done here
 			//double z = IP(y, b);
+			
 	
 			cout << endl << endl << "Optimal value of ";
 			cout << opt_value << " has been reached." << endl;
@@ -298,8 +321,11 @@ void RSM_Model::optimize(){
 			}
 
 
-			if(pivot_col_at_any_row.first == -1)
-			    continue;//it is already 0
+			if(pivot_col_at_any_row.first == -1){
+				A_buffer.rows[i] = A.rows[i];
+				continue;//it is already 0 just copy
+			}
+			    
 			
 			double t = - pivot_col_at_any_row.second / pivot_value;
 			if(fabs(t)>epsilon1){
@@ -307,13 +333,17 @@ void RSM_Model::optimize(){
                 cout << "canceling col: " << i << " : " << t << endl;
 #endif
                 int pivot_row_size = A.rows[pivot_row].size();
-				int pivot_row_idx = 1;
+				int pivot_row_idx = 0;
 				int current_row_size = A.rows[i].size();
-				int current_row_idx = 1;
+				int current_row_idx = 0;
 
 				while(pivot_row_idx < pivot_row_size 
 				    && current_row_idx < current_row_size){
-					
+#ifdef DBG_PRINT_
+                        cout << "pivot col " << pivot_row_idx  << " , " << 
+						A.rows[pivot_row][pivot_row_idx].first << " current col " <<
+						current_row_idx << " , " <<  A.rows[i][current_row_idx].first << endl;
+#endif				
 					if(A.rows[pivot_row][pivot_row_idx].first 
 					    > A.rows[i][current_row_idx].first){
 						//do sth
@@ -329,8 +359,12 @@ void RSM_Model::optimize(){
 						pivot_row_idx++;
 					}
 					else{
+
 						double _value_insert = 
 						    A.rows[i][current_row_idx].second + t * A.rows[pivot_row][pivot_row_idx].second;
+#ifdef DBG_PRINT_
+                        cout << current_row_idx << " : " << _value_insert << endl;
+#endif
 						//insert if non zero
 						if(fabs(_value_insert) > epsilon1)
 							A_buffer.rows[i].push_back(
@@ -398,13 +432,15 @@ void RSM_Model::optimize(){
 			cbar[pa.first] += ct * pa.second;
 		}
 
+		//it is usless and wrong! but doesn't matters
 		opt_value += ct * bbar[pivot_row];
         //swap buffer!
 		A = A_buffer;
 
-		cout << iteration << endl;
+		//cout << iteration << endl;
 		iteration++; 
-	}	
+	}
+	cout << "iteration:" << iteration << endl;	
 }
 //offset,col
 pair<int,int> RSM_Model::find_pivot_col(int pivot_row){
@@ -453,4 +489,20 @@ int RSM_Model::GetSmallest(const vector<double>& bbar) {
 	//cout << "smallest " << smallest << endl;
 
 	return result;
+}
+
+void RSM_Model::fillGraph(){
+	for(int i = 0;i < n;i++){
+		for(int j = 0;j < m;j++){
+			if(xb[j] == i){
+				//cout << "x" << i << " = " << bbar[j] << endl;
+				if(i < EdgeNum){
+					G.mem.array_Edge_x[i] = bbar[j];
+				}
+				else{
+					//todo:deal with server
+				}
+			}
+		}
+	}
 }
