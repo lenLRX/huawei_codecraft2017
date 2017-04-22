@@ -191,7 +191,7 @@ void RSM_Model::SetupObjectFunc(){
 
 void RSM_Model::optimize(){
 	for(int i = 0;i < n;i++){
-		c[i] *= -1;
+		//c[i] *= -1;
 	}
 	cbar = c;
 	for (size_t j = 0; j < mn; j++) { // c & x
@@ -226,7 +226,7 @@ void RSM_Model::optimize(){
 
 	double opt_value = 0.0;
 
-	while (!finished && iteration <= MAX_ITERATIONS	) {
+	while (!finished) {
 
 #ifdef DBG_PRINT
 		cout << "A =" << endl;
@@ -272,7 +272,7 @@ void RSM_Model::optimize(){
 			break;
 		}
 #ifdef DBG_PRINT	
-		cout <<"pivot row is " << pivot_row << endl;
+		cout << endl << "pivot row is " << pivot_row << endl;
 #endif
 		int pivot_col = find_pivot_col(pivot_row);
 
@@ -292,27 +292,34 @@ void RSM_Model::optimize(){
 #ifdef DBG_PRINT
 		cout << "pivot_value " << pivot_value << endl;
 #endif
+        bbar[pivot_row] /= pivot_value;
 		for(int i = 0;i < mn;i++){
 			A[pivot_row * mn + i] /= pivot_value;
 		}
 
-		bbar[pivot_row] /= pivot_value;
+		
 
+        //new pivot value is 1!!!!!!!!
 		//canceling pivot col
 		for(int i = 0;i < m;i++){
 			if(i == pivot_row)
 			    continue;
-			double t = - A[i * mn + pivot_col] / pivot_value;
-
-			for(int j = 0;j < mn;j++){
-				A[i * mn + j] += t * A[pivot_row * mn + j];
+			double t = - A[i * mn + pivot_col];
+			if(t != 0){
+#ifdef DBG_PRINT
+                cout << "canceling col: " << i << " : " << t << endl;
+#endif
+				for(int j = 0;j < mn;j++){
+			    	A[i * mn + j] += t * A[pivot_row * mn + j];
+			    }
+			    bbar[i] += t * bbar[pivot_row];
 			}
-			bbar[i] += t * bbar[pivot_row];
+			
 		}
 
 		//update cbar
 
-		double ct = -cbar[pivot_col] / pivot_value;
+		double ct = -cbar[pivot_col];
 
 		for(int j = 0;j < mn;j++){
 			cbar[j] += ct * A[pivot_row * mn + j];
@@ -332,10 +339,15 @@ int RSM_Model::find_pivot_col(int pivot_row){
 	bool first = true;
 	for(int i = 0;i < mn;i++){
 		//ignore sign
-		double a = fabs(A[pivot_row * mn + i]);
-		double _c = fabs(c[i]);
+		double a = A[pivot_row * mn + i];
+		if(a < 0){
+			a = fabs(a);
+		}
+		else
+		    continue;
+		double _c = fabs(cbar[i]);
 		if(_c > 0.0000001 && a > 0.0000001){
-			ratio = a / _c;
+			ratio =_c / a;
 			if(first || ratio < smallest){
 				first = false;
 				smallest = ratio;
