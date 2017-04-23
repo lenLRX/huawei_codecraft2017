@@ -52,7 +52,8 @@ public:
 		_0_1_distribution(uniform_int_distribution<int>(0,1)),
 		_random_cell_distribution(uniform_int_distribution<int>(0,NodeNum - 1)),
 		GlobalMin(numeric_limits<int>::max()),
-		_float_distribution(uniform_real_distribution<float>(0,1)){
+		_float_distribution(uniform_real_distribution<float>(0,1)),
+		generator(std::chrono::system_clock::now().time_since_epoch().count()){
 			consumer_map = vector<int>(NodeNum,false);
 			for(int i = 0;i < lr.G.ConsumerNum;i++){
 				consumer_map[lr.G.mem.array_Consumer_fromVertex[i]] = true;
@@ -119,6 +120,8 @@ public:
 	uniform_int_distribution<int> _0_1_distribution;
 	uniform_int_distribution<int> _random_cell_distribution;
 	uniform_real_distribution<float> _float_distribution;
+
+	vector<pair<double,double>> weights;
 };
 
 #endif//__FIREFLY_H__

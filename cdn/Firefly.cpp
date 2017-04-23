@@ -77,6 +77,18 @@ bool FireflySolver::CostOfFly(Firefly& fly,int i){
 	}
 	
 	if(fly.objective < GlobalMin){
+		weights.clear();
+		int Esize = lr.G.array_Vertex2Edge_len[-1];
+		int offset = lr.G.array_Vertex2Edge_offset[-1];
+		for(int i = 0;i < Esize;i++){
+			int e = lr.G.mem.array_Vertex_EdgesOut[offset + i];
+			if(e < 0)
+			    break;
+			if(lr.G.mem.array_Edge_x[e] > 0)
+			    weights.push_back(pair<double,double>(lr.G.mem.array_Edge_to[e],lr.G.mem.array_Edge_x[e]));
+		}
+
+		
 		//lr.check();
 		minServerNum = 0;
 		for(auto b:fly.bits){
@@ -185,12 +197,12 @@ void FireflySolver::Alpha_step(Firefly& fly){
 			}
 		}
 
-		else if(rand_num < 0.1){
+		else if(rand_num < 0.5){
 			/*
 			int rand_position = _random_cell_distribution(generator);
 	        fly.newbits[rand_position] = 0;
 			*/
-
+#if 0 
 			int delta = fly.count();
 
 			uniform_int_distribution<int> d(0,delta - 1);
@@ -212,10 +224,51 @@ void FireflySolver::Alpha_step(Firefly& fly){
 				}
 					
 			}
-			
+#else
+            int delta = fly.count();
+
+			vector<double> intervals;
+			vector<double> __wts;
+
+			double max_w = 0.0;
+
+			for(size_t st = 0;st < weights.size();st++){
+				intervals.push_back(st);
+				
+				if(max_w < weights[st].second)
+				    max_w = weights[st].second;
+			}
+
+			for(size_t st = 0;st < weights.size();st++){
+				__wts.push_back(max_w + 1 - weights[st].second);
+			}
+
+			intervals.push_back(weights.size());
+
+			piecewise_constant_distribution<double> d(intervals.begin(),intervals.end(),__wts.begin());
+
+			int todelete = d(generator);
+
+			//cout << delta << "todelete " << todelete << endl;
+
+			size_t bits_size = fly.newbits.size();
+			int c = 0;
+			for(size_t i = 0;i < bits_size;i++){
+				if(fly.newbits[i]){
+					if(c == todelete){
+						//cout << "delete" << endl;
+						fly.newbits[i] = false;
+						break;
+					}
+					c++;
+				}
+					
+			}
+#endif
 		}
 		else{
             if(_0_1_distribution(generator) < 0.5){
+#if 0
 			int count = fly.count();
 			//cout << "count : " << count << endl;
 			uniform_int_distribution<int> d(0,count - 1);
@@ -280,14 +333,120 @@ void FireflySolver::Alpha_step(Firefly& fly){
 				cout << "error " << pos2 << " " << empty_consumer_node_num << endl;
 
 			swap(fly.newbits[pos1],fly.newbits[pos2]);
+#else
+            int count = fly.count();
+			vector<double> intervals;
+			vector<double> __wts;
+
+			double max_w = 0.0;
+
+			for(size_t st = 0;st < weights.size();st++){
+				intervals.push_back(st);
+				
+				if(max_w < weights[st].second)
+				    max_w = weights[st].second;
+			}
+
+			for(size_t st = 0;st < weights.size();st++){
+				__wts.push_back(max_w + 1 - weights[st].second);
+			}
+
+			intervals.push_back(weights.size());
+
+			piecewise_constant_distribution<double> d(intervals.begin(),intervals.end(),__wts.begin());
+
+			int to_swap = d(generator);
+
+			int pos1 = -1;
+
+			size_t bits_size = fly.newbits.size();
+			int c = 0;
+			for(size_t i = 0;i < bits_size;i++){
+				if(fly.newbits[i]){
+					if(c == to_swap){
+						pos1 = i;
+						break;
+					}
+					c++;
+				}	
+			}
+
+			c = 0;
+			int pos2 = -1;
+
+			int empty_consumer_node_num = 0;
+			for(size_t i = 0;i < bits_size;i++){
+				if(consumer_map[i] && !fly.newbits[i]){
+					empty_consumer_node_num++;
+				}
+			}
+
+			if(empty_consumer_node_num <= 0){
+				uniform_int_distribution<int> d2(0,NodeNum - count - 1);
+				int to_swap2 = d2(generator);
+				for(size_t i = 0;i < bits_size;i++){
+					if(!fly.newbits[i]){
+						if(c == to_swap2){
+						    pos2 = i;
+						    	break;
+						}
+						c++;
+					}	
+				}
+
+			}else{
+				int c_to_open = uniform_int_distribution<int>(0,
+				empty_consumer_node_num - 1)(generator);
+				for(size_t i = 0;i < bits_size;i++){
+					if(consumer_map[i] && !fly.newbits[i]){
+						if(c == c_to_open){
+							pos2 = i;
+							break;
+						}
+						c++;
+					}
+				}
+			}
+
+			if(pos1 < 0)
+				cout << "error! " << pos1 << " to_swap: " << to_swap << " count " << count << endl;
+				
+			if(pos2 < 0)
+				cout << "error " << pos2 << " " << empty_consumer_node_num << endl;
+
+			swap(fly.newbits[pos1],fly.newbits[pos2]);
+#endif
 			}
 			else{
             int count = fly.count();
+#if 0
 			//cout << "count : " << count << endl;
 			uniform_int_distribution<int> d(0,count - 1);
 
 			int to_swap = d(generator);
+#else
+            vector<double> intervals;
+			vector<double> __wts;
 
+			double max_w = 0.0;
+
+			for(size_t st = 0;st < weights.size();st++){
+				intervals.push_back(st);
+				
+				if(max_w < weights[st].second)
+				    max_w = weights[st].second;
+			}
+
+			for(size_t st = 0;st < weights.size();st++){
+				__wts.push_back(max_w + 1 - weights[st].second);
+			}
+
+			intervals.push_back(weights.size());
+
+			piecewise_constant_distribution<double> d(intervals.begin(),intervals.end(),__wts.begin());
+
+			int to_swap = d(generator);
+#endif
 			int pos1 = -1;
 
 			size_t bits_size = fly.newbits.size();

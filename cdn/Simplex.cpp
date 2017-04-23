@@ -11,41 +11,6 @@ bool IntTest(double num){
 	return fabs(nearbyint(num) - num) < epsilon1;
 }
 
-void printX(vector<int> x) {
-	cout << "{";
-	for (size_t j = 0; j < x.size(); j++) {
-		cout << " x" << x[j];
-	}
-	cout << " }";
-}
-
-void printVector(vector<double> v) {
-	for (size_t f = 0; f < v.size(); f++) {
-		cout << v[f] << "\t";
-	}
-	cout << endl;
-}
-
-double determVar(int number, vector<int> xb, vector<int> xn, 
-	vector<double> bbar) {	
-
-	for (size_t i = 0; i < xn.size(); i++) {
-		if (xn[i] == number)
-			return 0;
-	}
-	for (size_t j = 0; j < xb.size(); j++) {
-		if (xb[j] == number) {
-			if (fabs(bbar[j]) > 0.001) {
-				return bbar[j];
-			}
-			else {
-				return 0;
-			}
-		}
-	}
-
-	return -1; // Will be obvious if a mistake
-}
 
 RSM_Model RSM_Model::Dual(){
 	
@@ -202,12 +167,12 @@ void RSM_Model::cut(){
 	init_slack();
 	while(!done){
 		optimize();
-		break;
+		//break;
 		done = true;
 		//for(int i = 0;i < n;i++){
 			for(int j = 0;j < m;j++){
-			    if(xb[j] < n){
-				//if(true){
+			    //if(xb[j] < n){
+				if(true){
 					//basic var
 					if(!IntTest(bbar[j])){
 						//still not integer add constraint for jth row
@@ -639,6 +604,17 @@ void RSM_Model::addConstraint(vector<pair<int,double>> line,double rhs){
 
 set<int> RSM_Model::GetBanlist(){
 	set<int> ret;
+	for (size_t j = 0; j < mn; j++) { // c & x
+		if (j < n) {
+			xn[j] = j;
+		}
+		else {
+			xb[j - n] = j;
+		}
+	}
+
+	init_slack();
+	optimize();
 	for(int i = 0;i < n;i++){
 		for(int j = 0;j < m;j++){
 			if(xb[j] == i){
