@@ -410,7 +410,7 @@ void FireflySolver::optimize(int stop_round){
 		for(size_t i = 0;i < population;i++){
 			auto& fly = Fireflies[i];
 			fly.newbits = fly.bits;
-			if(i > 10){
+			if(false && i > 10){
 				//xj != null
 				//int c_site = Get_Closer(Fireflies,i,1);
 				//Beta_step(fly,Fireflies[c_site]);

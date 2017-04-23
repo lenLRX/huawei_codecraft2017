@@ -3,8 +3,13 @@
 #include <algorithm>
 #include <cmath>
 //#define DBG_PRINT
-static const double epsilon1 = 0.00001;
+//#define DBG_PRINT__cut
+static const double epsilon1 = 0.0001;
 static const double epsilon2 = 0.00000001;
+
+bool IntTest(double num){
+	return fabs(nearbyint(num) - num) < epsilon1;
+}
 
 void printX(vector<int> x) {
 	cout << "{";
@@ -75,14 +80,15 @@ RSM_Model RSM_Model::Dual(){
 
 void RSM_Model::init_space(){
 	A = SparseMatrix<double>(m);
-
-	b = vector<double>(m);
-	c = vector<double>(mn,0.0);
 	cbar = vector<double>(mn);
 	bbar = vector<double>(m);
 	y = vector<double>(m);
 	xb = vector<int>(m);
 	xn = vector<int>(n);
+}
+
+void RSM_Model::SetBanlist(set<int> blist){
+	banlist = blist;
 }
 
 void RSM_Model::init(){
@@ -135,7 +141,7 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
 
 	//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + vid) * m + vid] = 1;//slack
 
-	b[vid] = -d;
+	bbar[vid] = -d;
 }
 
 void RSM_Model::init_slack(){
@@ -149,18 +155,18 @@ void RSM_Model::init_slack(){
 void RSM_Model::SetupObjectFunc(){
 	int i = 0;
 	for(;i < EdgeNum;i++){
-		c[i] = G.mem.array_Edge_cost[i];
+		cbar[i] = G.mem.array_Edge_cost[i];
 
         //UB of Edge
 		A.rows[G.VertexNum + i].push_back(pair<int,double>(i,1));
 		//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + G.VertexNum + i) * m + G.VertexNum + i] = -1;//slack
 		//A[(i + G.VertexNum * G.ServerLvlNum + EdgeNum) * m + G.VertexNum + i] = 1;//bigM
-		b[G.VertexNum + i] = G.mem.array_Edge_bandwidth[i];
+		bbar[G.VertexNum + i] = G.mem.array_Edge_bandwidth[i];
 	}
     
 	//n coef
 	for(;i < EdgeNum + G.VertexNum * G.ServerLvlNum;i++){
-		c[i] = G.const_array_Vertex_Server_Cost[(i - EdgeNum) / G.ServerLvlNum]
+		cbar[i] = G.const_array_Vertex_Server_Cost[(i - EdgeNum) / G.ServerLvlNum]
 		    + G.const_array_Server_Cost[(i - EdgeNum) % G.ServerLvlNum];
 	}
 
@@ -173,15 +179,72 @@ void RSM_Model::SetupObjectFunc(){
 		//A[(EdgeNum + i + G.VertexNum * G.ServerLvlNum + EdgeNum) * m + G.VertexNum + EdgeNum + i] = 1;//bigM
 		//no more than 1 server in a vertex
 		// -1 for change sign to >=
-		b[G.VertexNum + EdgeNum + i] = 1;
+		bbar[G.VertexNum + EdgeNum + i] = 1;
 	}
 
     //init_slack();
-	
+	for(int i = 0;i < n;i++){
+		cbar[i] *= -1;
+	}
 }
 
-void RSM_Model::optimize(){
-	for(int i = 0;i < n;i++){
+void RSM_Model::cut(){
+	bool done = false;
+	for (size_t j = 0; j < mn; j++) { // c & x
+		if (j < n) {
+			xn[j] = j;
+		}
+		else {
+			xb[j - n] = j;
+		}
+	}
+
+	init_slack();
+	while(!done){
+		optimize();
+		break;
+		done = true;
+		//for(int i = 0;i < n;i++){
+			for(int j = 0;j < m;j++){
+			    if(xb[j] < n){
+				//if(true){
+					//basic var
+					if(!IntTest(bbar[j])){
+						//still not integer add constraint for jth row
+						done = false;
+						vector<pair<int,double>> constraint;
+						bool all_integer = true;
+						size_t row_size = A.rows[j].size();
+						for(size_t offset = 0;offset < row_size;offset++){
+							if(!IntTest(A.rows[j][offset].second)){
+								all_integer = false;
+								break;
+							}
+						}
+						if(all_integer){
+							bbar[j] = floor(bbar[j]);
+							//throw "shit";
+						}
+						else{
+							for(size_t offset = 0;offset < row_size;offset++){
+								double value = floor(A.rows[j][offset].second) - A.rows[j][offset].second;
+								if(fabs(value) > epsilon1)
+									constraint.push_back(pair<int,double>(A.rows[j][offset].first,-fabs(value)));
+							}
+							addConstraint(constraint,floor(bbar[j]) - bbar[j]);
+						}
+						
+						break;
+					}
+				}
+			}
+		//}
+	}
+}
+
+void RSM_Model::mainLoop(){
+#if 0
+    for(int i = 0;i < n;i++){
 		//c[i] *= -1;
 	}
 	cbar = c;
@@ -196,18 +259,83 @@ void RSM_Model::optimize(){
 	bbar = b;
 
 	init_slack();
+#endif
+    vector<pair<vector<pair<int,double>>,double>> constraint_list;
+	for(int opt_time = 0;opt_time < 120;opt_time++){
+		init();
+		optimize();
+		int max = 0.0;
+		int max_vid;
+		for(int i = 0;i < n;i++){
+			for(int j = 0;j < m;j++){
+				if(xb[j] == i){
+					//cout << "x" << i << " = " << bbar[j] << endl;
+					if(i < EdgeNum){
+						continue;
+					}
+					else{
+						if(bbar[j] > max){
+							max = bbar[j];
+							max_vid = (i - EdgeNum)/G.ServerLvlNum;
+						}
+					}
+				}
+			}
+		}
+
+		vector<pair<int,double>> constraint;
+		for(int i = 0;i< G.ServerLvlNum;i++)
+		    constraint.push_back(pair<int,double>(G.EdgeNum + max_vid * G.ServerLvlNum+i,-1));
+		//addConstraint(constraint,-1);
+	}
+}
+
+void RSM_Model::optimize(){
 	
 #ifdef DBG_PRINT
 	cout << endl << "--- output ---" << endl << endl;
 	cout << "m = " << m << "\tn = " << n << endl;
 
 	cout << "c = ";
-	printVector(c);
+	printVector(cbar);
 
 	cout << "b = ";
-	printVector(b);
+	printVector(bbar);
 #endif
-	
+
+#ifdef DBG_PRINT__cut
+        cout << "A =" << endl;
+		for (size_t i = 0; i < m; i++) {
+			for (size_t j = 0; j < mn; j++) {
+				bool got = false;
+				for(size_t k = 0;k < A.rows[i].size();k++){
+					if(A.rows[i][k].first == j){
+						got = true;
+					    cout << A.rows[i][k].second << "\t";
+					}
+				}
+				if(!got)
+				    cout << int(0) << "\t";
+			}
+			cout << endl;
+		}
+		cout << "N = ";				// print null vars
+		printX(xn);
+		cout << "\tB = ";			// print basic vars
+		printX(xb);
+
+		cout << endl << "bbar =\t";	// print bbar
+		printVector(bbar);
+
+		cout << endl << "y =\t";	// print y
+		printVector(y);
+
+		cout << "cbar\t";			// print cbar
+		for (size_t f = 0; f < n; f++) {
+			cout << "x" << xn[f] << " " << cbar[f] << "\t";
+		}
+		cout << endl;
+#endif
 	
 
 	// Work
@@ -258,7 +386,7 @@ void RSM_Model::optimize(){
 	
 			cout << endl << endl << "Optimal value of ";
 			cout << opt_value << " has been reached." << endl;
-
+            
 			for(int i = 0;i < n;i++){
 				for(int j = 0;j < m;j++){
 					if(xb[j] == i){
@@ -266,6 +394,7 @@ void RSM_Model::optimize(){
 					}
 				}
 			}
+			
 			
 			finished = true;
 			break;
@@ -280,7 +409,8 @@ void RSM_Model::optimize(){
 
 		if (pivot_col == -1) {
 			finished = true;
-			cout << "Solution is unbounded" << endl;			
+			cout << "Solution is unbounded row size: " << A.rows[pivot_row].size() << endl;
+			throw 0 ;			
 			break;
 		}
 
@@ -422,7 +552,7 @@ void RSM_Model::optimize(){
 			
 		}
 
-		bbar[pivot_row] /= pivot_value;
+		
 
 		//update cbar
 
@@ -436,6 +566,8 @@ void RSM_Model::optimize(){
 		opt_value += ct * bbar[pivot_row];
         //swap buffer!
 		A = A_buffer;
+
+		bbar[pivot_row] /= pivot_value;
 
 		//cout << iteration << endl;
 		iteration++; 
@@ -491,18 +623,115 @@ int RSM_Model::GetSmallest(const vector<double>& bbar) {
 	return result;
 }
 
-void RSM_Model::fillGraph(){
+void RSM_Model::addConstraint(vector<pair<int,double>> line,double rhs){
+	m++;
+	mn++;
+	A.rows.push_back(line);
+	A.rows[m - 1].push_back(pair<int,double>(mn - 1,1));
+
+	xb.resize(m);
+	xn.resize(n);
+
+	xb.back() = m - 1;
+	cbar.push_back(0);
+	bbar.push_back(rhs);
+}
+
+set<int> RSM_Model::GetBanlist(){
+	set<int> ret;
 	for(int i = 0;i < n;i++){
 		for(int j = 0;j < m;j++){
 			if(xb[j] == i){
 				//cout << "x" << i << " = " << bbar[j] << endl;
 				if(i < EdgeNum){
-					G.mem.array_Edge_x[i] = bbar[j];
+					continue;
 				}
 				else{
-					//todo:deal with server
+					if(bbar[j] < epsilon1)
+					    ret.insert((i - EdgeNum) / G.ServerLvlNum);
 				}
 			}
 		}
 	}
+	return ret;
+}
+
+string RSM_Model::to_String(){
+	map<int,int> real_source;
+	map<int,int> serverlvl;
+	for(int i = 0;i < n;i++){
+		for(int j = 0;j < m;j++){
+			if(xb[j] == i){
+				//cout << "x" << i << " = " << bbar[j] << endl;
+				if(i < EdgeNum){
+					G.mem.array_Edge_x[i] = nearbyint(bbar[j]);
+				}
+				else{
+					real_source[(i - EdgeNum) / G.ServerLvlNum] 
+				        += nearbyint(bbar[j] * G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum]);
+					serverlvl[(i - EdgeNum) / G.ServerLvlNum] = (i - EdgeNum) % G.ServerLvlNum;
+				}
+			}
+		}
+	}
+
+	    vector<list<int>> result;
+		
+
+		for(auto p : real_source){
+			list<int> line;
+			line.push_back(p.first);
+			G.start_from_source(result,line,p.first,p.second,serverlvl[p.first]);
+		}
+		string newline = "\n";
+		string ret;
+		ret += to_string(int(result.size())) + newline;
+		ret += newline;
+		size_t line_num = result.size();
+		for(size_t i = 0;i < line_num;i++){
+			auto& line_list = result[i];
+			bool first = true;
+			for(int num:line_list){
+				if(first){
+					ret += to_string(num);
+					first = false;
+				}
+				else{
+					ret += " ";
+					ret += to_string(num);
+				}
+			}
+			if(i != line_num - 1)
+			    ret += newline;
+		}
+		return ret;
+}
+
+int RSM_Model::CalcCost(){
+	int cost = 0;
+	map<int,int> cost_map;
+	for(int i = 0;i < n;i++){
+		for(int j = 0;j < m;j++){
+			if(xb[j] == i){
+				//cout << "x" << i << " = " << bbar[j] << endl;
+				if(i < EdgeNum){
+					cost += G.mem.array_Edge_cost[i] * nearbyint(bbar[j]);
+				}
+				else{
+					int flow = nearbyint(bbar[j] * G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum]);
+					if(flow > 0){
+						//cost += G.const_array_Server_Cost[(i - EdgeNum) % G.ServerLvlNum];
+						    //+ G.const_array_Vertex_Server_Cost[(i - EdgeNum) / G.ServerLvlNum];
+						cost_map[(i - EdgeNum) / G.ServerLvlNum] = (i - EdgeNum) % G.ServerLvlNum;
+					}
+					
+				}
+			}
+		}
+	}
+	for(auto pc:cost_map){
+		cost += G.const_array_Server_Cost[pc.second] 
+		    + G.const_array_Vertex_Server_Cost[pc.first];
+	}
+	return cost;
 }

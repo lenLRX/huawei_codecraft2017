@@ -31,8 +31,16 @@ public:
 	RSM_Model Dual();
 
 	void init();
+
+	void SetBanlist(set<int> blist);
+
+	void cut();
+
+
 	void init_space();
 	void init_slack();
+
+	void mainLoop();
 
 	void optimize();
 
@@ -43,20 +51,24 @@ public:
 
     void SetupObjectFunc();
 
+	int CalcCost();
+
+	void addConstraint(vector<pair<int,double>> line,double rhs);
+
 
 	int GetSmallest(const vector<double>& bbar);
 	pair<int,int> find_pivot_col(int pivot_row);
 	//offset,col
 
-	void fillGraph();
+	string to_String();
+
+	set<int> GetBanlist();
 
 	vector<double> x;
-    vector<double> c;
 
 
     //vector<vector<double>> A;
 	SparseMatrix<double> A;
-	vector<double> b;
 
 	vector<double> cbar;				// c
 	vector<double> abarj;	// A
@@ -70,6 +82,7 @@ public:
 	vector<int> xb;
 	vector<int> xn;						// x
 	double t;									// for getting bbar
+	set<int> banlist;
 
     int MAX_ITERATIONS = 1000;
 	int EdgeNum;

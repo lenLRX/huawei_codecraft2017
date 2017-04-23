@@ -88,16 +88,53 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	Timer::getInstance().start();
 	//Timer::getInstance().set(80);
 	Timer::getInstance().set(88500);
-	Graph G;
-	parse2(topo,line_num,G);
+	Graph G2;
+	parse2(topo,line_num,G2);
 
-	RSM_Model RSM(G);
+
+	RSM_Model RSM(G2);
 	RSM.init();
+	/*
+	vector<pair<int,double >> constraint;
+	for(int i = 0;i < G2.VertexNum * G2.ServerLvlNum;i++){
+		constraint.push_back(pair<int,double>(G2.EdgeNum + i,-1));
+	}
+	RSM.addConstraint(constraint,-53);
 	RSM.optimize();
-	//RSM.Dual();
+	*/
+	RSM.cut();
+	auto banlist = RSM.GetBanlist();
+
+	cout << "cost " << RSM.CalcCost() << endl;
+
+	write_result(RSM.to_String().c_str(), filename);
+
+	/*
+
+	Graph G;
+	parse(topo,line_num,G);
+	G.save();
+
+	SSPA2 optimizer(G);
+
+	FireflySolver solver(optimizer,20,0.01,1,G.VertexNum);
+
+	for(auto& c:solver.consumer_map){
+		c = true;
+	}
+
+	for(int b:banlist){
+		solver.consumer_map[b] =false;
+	}
+
+	cout << "baned num " << banlist.size() << endl;
 	
-	//G.restore_globalmin();
-	//write_result(G.to_String().c_str(), filename);
+	solver.optimize(100000);
+	
+	G.restore_globalmin();
+	write_result(G.to_String().c_str(),filename);
+	//write_result(RSM.to_String().c_str(), filename);
+	*/
 }
 
 
