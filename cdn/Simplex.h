@@ -20,7 +20,7 @@ public:
 
 class RSM_Model{
 public:
-    RSM_Model(Graph& G):G(G){
+    RSM_Model(Graph& G):G(G),opt_value(0.0){
 		EdgeNum = G.EdgeNum;
 		n = G.VertexNum * G.ServerLvlNum + EdgeNum;
 		m = G.VertexNum * 2 + EdgeNum;
@@ -62,6 +62,8 @@ public:
 
 	string to_String();
 
+	void printSolution();
+
 	set<int> GetBanlist();
 
 	vector<double> x;
@@ -83,6 +85,8 @@ public:
 	vector<int> xn;						// x
 	double t;									// for getting bbar
 	set<int> banlist;
+
+	double opt_value;
 
     int MAX_ITERATIONS = 1000;
 	int EdgeNum;

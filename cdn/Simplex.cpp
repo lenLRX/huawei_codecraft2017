@@ -4,11 +4,11 @@
 #include <cmath>
 //#define DBG_PRINT
 //#define DBG_PRINT__cut
-static const double epsilon1 = 0.0001;
-static const double epsilon2 = 0.00000001;
+const double zero_tolerance = 1E-12;
+
 
 bool IntTest(double num){
-	return fabs(nearbyint(num) - num) < epsilon1;
+	return fabs(nearbyint(num) - num) < zero_tolerance;
 }
 
 
@@ -164,15 +164,15 @@ void RSM_Model::cut(){
 		}
 	}
 
-	init_slack();
+	//init_slack();
 	while(!done){
 		optimize();
-		//break;
+		break;
 		done = true;
 		//for(int i = 0;i < n;i++){
 			for(int j = 0;j < m;j++){
-			    //if(xb[j] < n){
-				if(true){
+			    if(xb[j] < n){
+				//if(true){
 					//basic var
 					if(!IntTest(bbar[j])){
 						//still not integer add constraint for jth row
@@ -193,7 +193,7 @@ void RSM_Model::cut(){
 						else{
 							for(size_t offset = 0;offset < row_size;offset++){
 								double value = floor(A.rows[j][offset].second) - A.rows[j][offset].second;
-								if(fabs(value) > epsilon1)
+								if(fabs(value) > zero_tolerance)
 									constraint.push_back(pair<int,double>(A.rows[j][offset].first,-fabs(value)));
 							}
 							addConstraint(constraint,floor(bbar[j]) - bbar[j]);
@@ -206,6 +206,18 @@ void RSM_Model::cut(){
 		//}
 	}
 }
+
+void RSM_Model::printSolution(){
+            
+	for(int i = 0;i < n;i++){
+		for(int j = 0;j < m;j++){
+			if(xb[j] == i){
+				cout << "x" << i << " = " << bbar[j] << endl;
+			}
+		}
+	}
+}
+
 
 void RSM_Model::mainLoop(){
 #if 0
@@ -308,8 +320,6 @@ void RSM_Model::optimize(){
 	size_t iteration = 1;
 	int enter, leave, col;
 
-	double opt_value = 0.0;
-
 	while (!finished) {
 
 #ifdef DBG_PRINT
@@ -346,21 +356,8 @@ void RSM_Model::optimize(){
 #endif
 		int pivot_row = GetSmallest(bbar);
 		if (pivot_row == -1) { // if none, we're done here
-			//double z = IP(y, b);
-			
-	
-			cout << endl << endl << "Optimal value of ";
-			cout << opt_value << " has been reached." << endl;
-            
-			for(int i = 0;i < n;i++){
-				for(int j = 0;j < m;j++){
-					if(xb[j] == i){
-						cout << "x" << i << " = " << bbar[j] << endl;
-					}
-				}
-			}
-			
-			
+		    cout << endl << endl << "Optimal value of ";
+	        cout << opt_value << " has been reached." << endl;
 			finished = true;
 			break;
 		}
@@ -423,7 +420,7 @@ void RSM_Model::optimize(){
 			    
 			
 			double t = - pivot_col_at_any_row.second / pivot_value;
-			if(fabs(t)>epsilon1){
+			if(fabs(t)>zero_tolerance){
 #ifdef DBG_PRINT
                 cout << "canceling col: " << i << " : " << t << endl;
 #endif
@@ -461,7 +458,7 @@ void RSM_Model::optimize(){
                         cout << current_row_idx << " : " << _value_insert << endl;
 #endif
 						//insert if non zero
-						if(fabs(_value_insert) > epsilon1)
+						if(fabs(_value_insert) > zero_tolerance)
 							A_buffer.rows[i].push_back(
 								pair<int,double>(A.rows[pivot_row][pivot_row_idx].first,
 								_value_insert)
@@ -490,7 +487,7 @@ void RSM_Model::optimize(){
 				    pivot_iter != A.rows[pivot_row].end();pivot_iter++){
 					A.rows[i][pivot_iter->first] += t * pivot_iter->second;
 					//zero now
-					if(fabs(A.rows[i][pivot_iter->first]) < epsilon1)
+					if(fabs(A.rows[i][pivot_iter->first]) < zero_tolerance)
 					    A.rows[i].erase(pivot_iter->first);
 				}
 				*/
@@ -556,13 +553,20 @@ pair<int,int> RSM_Model::find_pivot_col(int pivot_row){
 		else
 		    continue;
 		double _c = fabs(cbar[pa.first]);
-		if(_c > 0.0000001 && a > 0.0000001){
+		if(a > zero_tolerance){
 			ratio =_c / a;
 			if(first || ratio < smallest){
 				first = false;
 				smallest = ratio;
 				pos.first = i;
 				pos.second = pa.first;
+			}
+			else if(ratio < smallest + zero_tolerance){
+				if(abs(A.rows[pivot_row][pos.first].second) < a){
+					smallest = ratio;
+					pos.first = i;
+					pos.second = pa.first;
+				}
 			}
 		}
 
@@ -623,7 +627,7 @@ set<int> RSM_Model::GetBanlist(){
 					continue;
 				}
 				else{
-					if(bbar[j] < epsilon1)
+					if(bbar[j] < zero_tolerance)
 					    ret.insert((i - EdgeNum) / G.ServerLvlNum);
 				}
 			}
