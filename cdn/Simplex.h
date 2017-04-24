@@ -2,21 +2,9 @@
 #define __SIMPLEX_H__
 
 #include "optimizer.h"
+#include "Matrix.h"
 #include <map>
 
-template<typename T = double>
-class SparseMatrix{
-public:
-    SparseMatrix()=default;
-    SparseMatrix(int row_num){
-		rows.resize(row_num);
-		for(int i = 0;i < row_num;i++){
-			//rows[i].reserve(100);
-		}
-	}
-
-    vector<vector<pair<int,T>>> rows;
-};
 
 class RSM_Model{
 public:

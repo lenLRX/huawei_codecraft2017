@@ -4,8 +4,6 @@
 #include <cmath>
 //#define DBG_PRINT
 //#define DBG_PRINT__cut
-const double zero_tolerance = 1E-12;
-
 
 bool IntTest(double num){
 	return fabs(nearbyint(num) - num) < zero_tolerance;
@@ -15,31 +13,7 @@ bool IntTest(double num){
 RSM_Model RSM_Model::Dual(){
 	
 	RSM_Model dual(G);
-	/*
-	dual.m = n;
-	dual.n = m;
-	dual.mn = m + n;
 
-	dual.init_space();
-	for(int i = 0;i < dual.b.size();i++){
-		dual.b[i] = c[i];
-	}
-	
-	for(int i = 0;i < b.size();i++){
-		dual.c[i] = b[i];
-	}
-	//dual.c = b;
-
-	for (size_t row = 0; row < m; ++row) {
-        for (size_t col = 0; col < n; ++col) {
-            dual.A[row * dual.m + col] = A[col * (m) + row];
-        }
-    }
-
-	dual.init_slack();
-
-	dual.optimize();
-	*/
 	return dual;
 }
 
@@ -387,11 +361,8 @@ void RSM_Model::optimize(){
 		cout << "pivot_value " << pivot_value << endl;
 #endif
         
-		auto A_buffer = SparseMatrix<double>(m);
-		for(pair<int,double> pa:A.rows[pivot_row]){
-			pa.second /= pivot_value;
-			A_buffer.rows[pivot_row].emplace_back(pa);
-		}
+		//auto A_buffer = SparseMatrix<double>(m);
+		
 
 
 		
@@ -403,6 +374,7 @@ void RSM_Model::optimize(){
 			    continue;
 			
 			pair<int,double> pivot_col_at_any_row = pair<int,double>(-1,0.0);
+			//TODO binary search
 			size_t row_size = A.rows[i].size();
 			for(size_t j = 0;j < row_size;j++){
 		        const auto& pa = A.rows[i][j];
@@ -414,101 +386,14 @@ void RSM_Model::optimize(){
 
 
 			if(pivot_col_at_any_row.first == -1){
-				A_buffer.rows[i] = A.rows[i];
-				continue;//it is already 0 just copy
+				//A_buffer.rows[i] = A.rows[i];
+				continue;//it is already 0 just do nothing
 			}
 			    
 			
 			double t = - pivot_col_at_any_row.second / pivot_value;
 			if(fabs(t)>zero_tolerance){
-#ifdef DBG_PRINT
-                cout << "canceling col: " << i << " : " << t << endl;
-#endif
-                int pivot_row_size = A.rows[pivot_row].size();
-				int pivot_row_idx = 0;
-				int current_row_size = A.rows[i].size();
-				int current_row_idx = 0;
-
-				while(pivot_row_idx < pivot_row_size 
-				    && current_row_idx < current_row_size){
-#ifdef DBG_PRINT_
-                        cout << "pivot col " << pivot_row_idx  << " , " << 
-						A.rows[pivot_row][pivot_row_idx].first << " current col " <<
-						current_row_idx << " , " <<  A.rows[i][current_row_idx].first << endl;
-#endif				
-					if(A.rows[pivot_row][pivot_row_idx].first 
-					    > A.rows[i][current_row_idx].first){
-						//do sth
-						A_buffer.rows[i].emplace_back(A.rows[i][current_row_idx]);
-						current_row_idx++;
-					}
-					else if(A.rows[pivot_row][pivot_row_idx].first 
-					    < A.rows[i][current_row_idx].first){
-						A_buffer.rows[i].emplace_back(
-							A.rows[pivot_row][pivot_row_idx].first,
-							t * A.rows[pivot_row][pivot_row_idx].second
-						);
-						pivot_row_idx++;
-					}
-					else{
-
-						double _value_insert = 
-						    A.rows[i][current_row_idx].second + t * A.rows[pivot_row][pivot_row_idx].second;
-#ifdef DBG_PRINT_
-                        cout << current_row_idx << " : " << _value_insert << endl;
-#endif
-						//insert if non zero
-						if(fabs(_value_insert) > zero_tolerance)
-							A_buffer.rows[i].emplace_back(
-								A.rows[pivot_row][pivot_row_idx].first,
-								_value_insert
-							);
-						current_row_idx++;
-						pivot_row_idx++;
-					}
-				}
-
-				if(pivot_row_idx == pivot_row_size){
-					//job is done for pivot row,check current row.
-					for(;current_row_idx < current_row_size;current_row_idx++){
-						A_buffer.rows[i].emplace_back(A.rows[i][current_row_idx]);
-					}
-				}
-				else{
-					for(;pivot_row_idx < pivot_row_size;pivot_row_idx++){
-						A_buffer.rows[i].emplace_back(
-							A.rows[pivot_row][pivot_row_idx].first,
-							t * A.rows[pivot_row][pivot_row_idx].second
-						);
-					}
-				}
-				/*
-                for(auto pivot_iter = A.rows[pivot_row].begin();
-				    pivot_iter != A.rows[pivot_row].end();pivot_iter++){
-					A.rows[i][pivot_iter->first] += t * pivot_iter->second;
-					//zero now
-					if(fabs(A.rows[i][pivot_iter->first]) < zero_tolerance)
-					    A.rows[i].erase(pivot_iter->first);
-				}
-				*/
-				/*
-				for(auto iter = A.rows[i].begin();iter != A.rows[i].end();){
-					auto pivot_iter = A.rows[pivot_row].find(iter->first);
-					if(pivot_iter != A.rows[pivot_row].end()){
-						iter->second += t * pivot_iter->second;
-						if(fabs(iter->second) < epsilon2){
-							//almost 0,remove it
-							iter = A.rows[i].erase(iter);
-						}
-						else{
-							iter++;
-						}
-					}
-					else{
-						iter++;
-					}
-				}
-				*/
+                row_operation<double>(A,pivot_row,i,t);
 			    bbar[i] += t * bbar[pivot_row];
 			}
 			
@@ -527,9 +412,13 @@ void RSM_Model::optimize(){
 		//it is usless and wrong! but doesn't matters
 		opt_value += ct * bbar[pivot_row];
         //swap buffer!
-		A = A_buffer;
+		//A = A_buffer;
 
 		bbar[pivot_row] /= pivot_value;
+		for(pair<int,double>& pa:A.rows[pivot_row]){
+			pa.second /= pivot_value;
+			//A_buffer.rows[pivot_row].emplace_back(pa);
+		}
 
 		//cout << iteration << endl;
 		iteration++; 
