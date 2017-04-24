@@ -18,6 +18,23 @@ public:
 		rows.resize(row_num);
 	}
 
+	void pretty_print(int col_num){
+		for (size_t i = 0; i < rows.size(); i++) {
+			for (size_t j = 0; j < col_num; j++) {
+				bool got = false;
+				for(size_t k = 0;k < rows[i].size();k++){
+					if(rows[i][k].first == j){
+						got = true;
+					    cout << rows[i][k].second << "\t";
+					}
+				}
+				if(!got)
+				    cout << int(0) << "\t";
+			}
+			cout << endl;
+		}
+	}
+
     vector<vector<pair<int,T>>> rows;
 };
 
@@ -99,7 +116,7 @@ void row_operation(SparseMatrix<T>& mat,int source,int dest,double coef){
 template<typename T = double>
 void GaussJordanInversion(SparseMatrix<T>& mat){
 	int dim = mat.rows.size();
-	SparseMatrix<T> Identity;
+	SparseMatrix<T> Identity(dim);
 	//init Identity SparseMatrix
 	for(int i = 0;i < dim;i++){
 		Identity.rows[i].emplace_back(i,1);
@@ -119,7 +136,7 @@ void GaussJordanInversion(SparseMatrix<T>& mat){
 					mat.rows[_row][0].first == col){
 					// non-zero element at this col
 					swap(mat.rows[col],mat.rows[_row]);
-					swap(mat.Identity[col],mat.Identity[_row]);
+					swap(Identity.rows[col],Identity.rows[_row]);
 					found = true;
 					break;
 				}
@@ -156,18 +173,18 @@ void GaussJordanInversion(SparseMatrix<T>& mat){
 				}
 			}
 
-			vector<pair<int,double>> mat_new_row,Identity_new_row;
-
 			if(col_at_row.first == -1){
 				continue;//it is already 0 just do nothing
 			}
 
 			double t = - col_at_row.second;
 			if(fabs(t)>zero_tolerance){
-                
+                row_operation<double>(mat,col,row,t);
+				row_operation<double>(Identity,col,row,t);
 			}
 		}
 	}
+	mat = Identity;
 }
 
 #endif
