@@ -19,9 +19,12 @@ RSM_Model RSM_Model::Dual(){
 
 void RSM_Model::init_space(){
 	A = SparseMatrix<double>(m);
+	A_origin = SparseMatrix<double>(m);
+	A_origin_col_major = SparseMatrix<double>(mn);
 	cbar = vector<double>(mn);
+	c_origin = vector<double>(mn);
 	bbar = vector<double>(m);
-	y = vector<double>(m);
+	b_origin = vector<double>(m);
 	xb = vector<int>(m);
 	xn = vector<int>(n);
 }
@@ -54,6 +57,19 @@ void RSM_Model::init(){
 		AddVertexBalance(EdgesIn,EdgesOut,v,-G.mem.array_Vertex_d[v]);
 	}
 	SetupObjectFunc();
+	A_origin = A;
+	//init col major
+
+	for(int i = 0;i < m;i++){
+		size_t rowsize = A_origin.rows.size();
+		for(size_t j = 0;j < rowsize;j++){
+			A_origin_col_major.rows[A_origin.rows[i][j].first].
+			    emplace_back(i,A_origin.rows[i][j].second);
+				            //row,value
+		}
+	}
+	b_origin = bbar;
+	c_origin = cbar;
 }
 
 void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
@@ -278,8 +294,6 @@ void RSM_Model::optimize(){
 		cout << endl << "bbar =\t";	// print bbar
 		printVector(bbar);
 
-		cout << endl << "y =\t";	// print y
-		printVector(y);
 
 		cout << "cbar\t";			// print cbar
 		for (size_t f = 0; f < n; f++) {
@@ -320,9 +334,6 @@ void RSM_Model::optimize(){
 		cout << endl << "bbar =\t";	// print bbar
 		printVector(bbar);
 
-		cout << endl << "y =\t";	// print y
-		printVector(y);
-
 		cout << "cbar\t";			// print cbar
 		for (size_t f = 0; f < n; f++) {
 			cout << "x" << xn[f] << " " << cbar[f] << "\t";
@@ -331,7 +342,7 @@ void RSM_Model::optimize(){
 		int pivot_row = GetSmallest(bbar);
 		if (pivot_row == -1) { // if none, we're done here
 		    cout << endl << endl << "Optimal value of ";
-	        cout << opt_value << " has been reached." << endl;
+	        cout << CalcOptval() << " has been reached." << endl;
 			finished = true;
 			break;
 		}
@@ -410,7 +421,7 @@ void RSM_Model::optimize(){
 		}
 
 		//it is usless and wrong! but doesn't matters
-		opt_value += ct * bbar[pivot_row];
+		//opt_value += ct * bbar[pivot_row];
         //swap buffer!
 		//A = A_buffer;
 
@@ -419,6 +430,8 @@ void RSM_Model::optimize(){
 			pa.second /= pivot_value;
 			//A_buffer.rows[pivot_row].emplace_back(pa);
 		}
+
+		eliminateError();
 
 		//cout << iteration << endl;
 		iteration++; 
@@ -485,14 +498,29 @@ void RSM_Model::addConstraint(vector<pair<int,double>> line,double rhs){
 	m++;
 	mn++;
 	A.rows.emplace_back(line);
+	A_origin.rows.emplace_back(line);
+	vector<pair<int,double>> tmp_line;
+	tmp_line.emplace_back(m - 1,1);
+	A_origin_col_major.rows.emplace_back(
+		tmp_line);
+	
+	for(auto pa:line){
+		A_origin_col_major.rows[pa.first].
+		    emplace_back(m - 1,pa.second);
+	}
+
 	A.rows[m - 1].emplace_back(mn - 1,1);
+	A_origin.rows[m - 1].emplace_back(mn - 1,1);
+
 
 	xb.resize(m);
 	xn.resize(n);
 
 	xb.back() = m - 1;
 	cbar.emplace_back(0);
+	c_origin.emplace_back(0);
 	bbar.emplace_back(rhs);
+	b_origin.emplace_back(rhs);
 }
 
 set<int> RSM_Model::GetBanlist(){
@@ -574,6 +602,44 @@ string RSM_Model::to_String(){
 			    ret += newline;
 		}
 		return ret;
+}
+
+void RSM_Model::eliminateError(){
+	SparseMatrix<double> B_inv(m);
+
+	//pre build cprimeB
+	vector<double> cprimeB(m);
+
+    //reconstructed B
+	for(int i = 0;i < m;i++){
+		B_inv.rows[i] = A_origin_col_major.rows[xb[i]];
+		cprimeB[i] = c_origin[xb[i]];
+	}
+	//invert B
+	GaussJordanInversion(B_inv);
+
+	//recalculate cbar (reduced cost)
+	for(int i = 0;i < mn;i++){
+		//B_inv x Aj
+		vector<double> v_tmp(m);
+		MatMulVector(B_inv,A_origin_col_major.rows[i],v_tmp);
+		cbar[i] = c_origin[i] - InnerProduct(cprimeB,v_tmp);
+	}
+
+	//recalculate bbar
+	//bbar = B-1 x b_origin
+	MatMulVector(B_inv,b_origin,bbar);
+
+    //A = B_inv x A_origin_col_major
+	MatMulMat(B_inv,A_origin_col_major,A);
+}
+
+double RSM_Model::CalcOptval(){
+	opt_value = 0.0;
+	for(int i = 0;i < m;i++){
+		opt_value += cbar[xb[i]] * bbar[xb[i]];
+	}
+	return opt_value;
 }
 
 int RSM_Model::CalcCost(){

@@ -33,7 +33,7 @@ void MatrixInversionTest(){
 	Mat.pretty_print(3);
 }
 
-void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
+void deploy_server66(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	//SimplexTest();
 	MatrixInversionTest();
 }
@@ -104,7 +104,7 @@ void deploy_server2(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 }
 
 
-void deploy_server66(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
+void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 	Timer::getInstance().start();
 	//Timer::getInstance().set(80);
 	Timer::getInstance().set(88500);

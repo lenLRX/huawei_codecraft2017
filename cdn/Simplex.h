@@ -36,17 +36,20 @@ public:
     void AddVertexBalance(const vector<int>& EdgesIn,
 	    const vector<int>& EdgesOut,int vid,int d);
 
-
     void SetupObjectFunc();
 
 	int CalcCost();
 
 	void addConstraint(vector<pair<int,double>> line,double rhs);
 
-
 	int GetSmallest(const vector<double>& bbar);
+
+    //offset,col
 	pair<int,int> find_pivot_col(int pivot_row);
-	//offset,col
+	
+	void eliminateError();
+
+	double CalcOptval();
 
 	string to_String();
 
@@ -56,19 +59,18 @@ public:
 
 	vector<double> x;
 
-
-    //vector<vector<double>> A;
+    SparseMatrix<double> A_origin;
+	SparseMatrix<double> A_origin_col_major;
 	SparseMatrix<double> A;
 
+	vector<double> c_origin;
+
 	vector<double> cbar;				// c
-	vector<double> abarj;	// A
-	//vector<vector<double>> Ab;							// B
-	vector<double> Ab;
-	//vector<vector<double>> e;								// E
-	vector<double> e;
-	//vector<vector<double>> etaFile;//Eta File
+
+    vector<double> b_origin;
+
 	vector<double> bbar;				// b
-	vector<double> y;										// y
+
 	vector<int> xb;
 	vector<int> xn;						// x
 	double t;									// for getting bbar
@@ -76,12 +78,10 @@ public:
 
 	double opt_value;
 
-    int MAX_ITERATIONS = 1000;
 	int EdgeNum;
 	int n;//num vars
 	int m;//num constraints
 	int mn;
-	int BigM = 10000000;
 	Graph& G;
 };
 

@@ -53,6 +53,122 @@ public:
 };
 
 
+template<typename T = double>
+void MatMulMat(const SparseMatrix<T>& lhs,
+    const SparseMatrix<T>& col_major,
+	SparseMatrix<T>& dest){
+	int m = lhs.rows.size();
+	int mn = col_major.rows.size();
+
+	for(int i = 0;i < mn;i++)
+	    dest.rows[i].clear();
+
+	for(int i = 0;i < m;i++){
+		for(int j = 0;j < mn;j++){
+			double sum = 0.0;
+			int lhs_row_size = lhs.rows[i].size();
+			int lhs_row_idx = 0;
+			int col_major_row_size = col_major.rows[j].size();
+			int col_major_row_idx = 0;
+
+			while(lhs_row_idx < lhs_row_size 
+				&& col_major_row_idx < col_major_row_size){
+				
+				if(lhs.rows[i][lhs_row_idx].first 
+					> col_major.rows[j][col_major_row_idx].first){
+					col_major_row_idx++;
+				}
+				else if(lhs.rows[i][lhs_row_idx].first 
+					< col_major.rows[j][col_major_row_idx].first){
+					lhs_row_idx++;
+				}
+				else{
+					//col_major_row_idx == lhs_row_idx both nonzero
+					double _value_insert = 
+						col_major.rows[j][col_major_row_idx].second
+						* lhs.rows[i][lhs_row_idx].second;
+					
+					sum += _value_insert;
+
+					col_major_row_idx++;
+					lhs_row_idx++;
+				}
+			}//while
+
+			if(fabs(sum) > zero_tolerance){
+				// insert if nonzero
+				dest.rows[i].emplace_back(j,sum);
+			}
+	    }
+	}
+}
+
+//A x v1 = v2
+template<typename T = double>
+void MatMulVector(const SparseMatrix<T>& mat,
+    const vector<double>& source,
+	vector<double>& dest){
+	int row_num = mat.rows.size();
+	for(int i = 0;i < row_num;i++){
+		double sum = 0.0;
+		int row_size = mat.rows[i].size();
+		for(int j = 0;j < row_size;j++){
+			sum += mat.rows[i][j].second * 
+			    source[mat.rows[i][j].first];
+		}
+		dest[i] = sum;
+	}
+}
+
+template<typename T = double>
+void MatMulVector(const SparseMatrix<T>& lhs,
+    const vector<pair<int,double>>& col_major,
+	vector<double>& dest){
+	int row_num = lhs.rows.size();
+	for(int i = 0;i < row_num;i++){
+		double sum = 0.0;
+			int lhs_row_size = lhs.rows[i].size();
+			int lhs_row_idx = 0;
+			int col_major_row_size = col_major.size();
+			int col_major_row_idx = 0;
+
+			while(lhs_row_idx < lhs_row_size 
+				&& col_major_row_idx < col_major_row_size){
+				
+				if(lhs.rows[i][lhs_row_idx].first 
+					> col_major[col_major_row_idx].first){
+					col_major_row_idx++;
+				}
+				else if(lhs.rows[i][lhs_row_idx].first 
+					< col_major[col_major_row_idx].first){
+					lhs_row_idx++;
+				}
+				else{
+					//col_major_row_idx == lhs_row_idx both nonzero
+					double _value_insert = 
+						col_major[col_major_row_idx].second
+						* lhs.rows[i][lhs_row_idx].second;
+					
+					sum += _value_insert;
+
+					col_major_row_idx++;
+					lhs_row_idx++;
+				}
+			}//while
+		dest[i] = sum;
+	}
+}
+
+static double InnerProduct(const vector<double>& v1,const vector<double>&v2){
+	int dim = v1.size();
+	double sum = 0.0;
+	for(int i = 0;i < dim;i++){
+		sum += v1[i] * v2[i];
+	}
+	return sum;
+}
+
+
 //mat.rows[dest] += coef X mat.rows[source]
 template<typename T = double>
 void row_operation(SparseMatrix<T>& mat,int source,int dest,double coef){
