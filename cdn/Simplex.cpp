@@ -67,7 +67,7 @@ void RSM_Model::init(){
 			if(e < 0)
 			    break;
 			else
-			    EdgesOut.push_back(e);
+			    EdgesOut.emplace_back(e);
 		}
 
 		for(int i = 0;i < Esize;i++){
@@ -75,7 +75,7 @@ void RSM_Model::init(){
 			if(e < 0)
 			    break;
 			else
-			    EdgesIn.push_back(e);
+			    EdgesIn.emplace_back(e);
 		}
 		AddVertexBalance(EdgesIn,EdgesOut,v,-G.mem.array_Vertex_d[v]);
 	}
@@ -86,16 +86,16 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
     const vector<int>& EdgesOut,int vid,int d){
 
 	for(int in:EdgesIn){
-		A.rows[vid].push_back(pair<int,double>(in,-1));
+		A.rows[vid].emplace_back(in,-1);
 	}
 
 	for(int out:EdgesOut){
-		A.rows[vid].push_back(pair<int,double>(out,1));
+		A.rows[vid].emplace_back(out,1);
 	}
 
 	for(int i = EdgeNum + vid * G.ServerLvlNum;
 	    i < EdgeNum + (vid + 1) * G.ServerLvlNum;i++){
-		A.rows[vid].push_back(pair<int,double>(i,-G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum]));
+		A.rows[vid].emplace_back(i,-G.const_array_Server_Ability[(i - EdgeNum) % G.ServerLvlNum]);
 	}
 
     //we must ensure the order
@@ -111,7 +111,7 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
 
 void RSM_Model::init_slack(){
 	for (int i = 0; i < m; i++) { // A & b
-	    A.rows[i].push_back(pair<int,double>(i + n,1));
+	    A.rows[i].emplace_back(i + n,1);
 	}	
 	
 	
@@ -123,7 +123,7 @@ void RSM_Model::SetupObjectFunc(){
 		cbar[i] = G.mem.array_Edge_cost[i];
 
         //UB of Edge
-		A.rows[G.VertexNum + i].push_back(pair<int,double>(i,1));
+		A.rows[G.VertexNum + i].emplace_back(i,1);
 		//A[(EdgeNum + G.VertexNum+G.VertexNum * G.ServerLvlNum + EdgeNum + G.VertexNum + i) * m + G.VertexNum + i] = -1;//slack
 		//A[(i + G.VertexNum * G.ServerLvlNum + EdgeNum) * m + G.VertexNum + i] = 1;//bigM
 		bbar[G.VertexNum + i] = G.mem.array_Edge_bandwidth[i];
@@ -137,7 +137,7 @@ void RSM_Model::SetupObjectFunc(){
 
 	for(int i = 0;i < G.VertexNum;i++){
 		for(int j = 0;j < G.ServerLvlNum;j++){
-			A.rows[G.VertexNum + EdgeNum + i].push_back(pair<int,double>(i * G.ServerLvlNum + j + EdgeNum,1));
+			A.rows[G.VertexNum + EdgeNum + i].emplace_back(i * G.ServerLvlNum + j + EdgeNum,1);
 		}
 
 		//A[(EdgeNum + G.VertexNum + G.VertexNum * G.ServerLvlNum + EdgeNum + G.VertexNum + EdgeNum + i) * m + G.VertexNum + EdgeNum + i] = -1;//slack
@@ -194,7 +194,7 @@ void RSM_Model::cut(){
 							for(size_t offset = 0;offset < row_size;offset++){
 								double value = floor(A.rows[j][offset].second) - A.rows[j][offset].second;
 								if(fabs(value) > zero_tolerance)
-									constraint.push_back(pair<int,double>(A.rows[j][offset].first,-fabs(value)));
+									constraint.emplace_back(A.rows[j][offset].first,-fabs(value));
 							}
 							addConstraint(constraint,floor(bbar[j]) - bbar[j]);
 						}
@@ -262,7 +262,7 @@ void RSM_Model::mainLoop(){
 
 		vector<pair<int,double>> constraint;
 		for(int i = 0;i< G.ServerLvlNum;i++)
-		    constraint.push_back(pair<int,double>(G.EdgeNum + max_vid * G.ServerLvlNum+i,-1));
+		    constraint.emplace_back(G.EdgeNum + max_vid * G.ServerLvlNum+i,-1);
 		//addConstraint(constraint,-1);
 	}
 }
@@ -390,7 +390,7 @@ void RSM_Model::optimize(){
 		auto A_buffer = SparseMatrix<double>(m);
 		for(pair<int,double> pa:A.rows[pivot_row]){
 			pa.second /= pivot_value;
-			A_buffer.rows[pivot_row].push_back(pa);
+			A_buffer.rows[pivot_row].emplace_back(pa);
 		}
 
 
@@ -439,14 +439,14 @@ void RSM_Model::optimize(){
 					if(A.rows[pivot_row][pivot_row_idx].first 
 					    > A.rows[i][current_row_idx].first){
 						//do sth
-						A_buffer.rows[i].push_back(A.rows[i][current_row_idx]);
+						A_buffer.rows[i].emplace_back(A.rows[i][current_row_idx]);
 						current_row_idx++;
 					}
 					else if(A.rows[pivot_row][pivot_row_idx].first 
 					    < A.rows[i][current_row_idx].first){
-						A_buffer.rows[i].push_back(
-							pair<int,double>(A.rows[pivot_row][pivot_row_idx].first,
-							t * A.rows[pivot_row][pivot_row_idx].second)
+						A_buffer.rows[i].emplace_back(
+							A.rows[pivot_row][pivot_row_idx].first,
+							t * A.rows[pivot_row][pivot_row_idx].second
 						);
 						pivot_row_idx++;
 					}
@@ -459,9 +459,9 @@ void RSM_Model::optimize(){
 #endif
 						//insert if non zero
 						if(fabs(_value_insert) > zero_tolerance)
-							A_buffer.rows[i].push_back(
-								pair<int,double>(A.rows[pivot_row][pivot_row_idx].first,
-								_value_insert)
+							A_buffer.rows[i].emplace_back(
+								A.rows[pivot_row][pivot_row_idx].first,
+								_value_insert
 							);
 						current_row_idx++;
 						pivot_row_idx++;
@@ -471,14 +471,14 @@ void RSM_Model::optimize(){
 				if(pivot_row_idx == pivot_row_size){
 					//job is done for pivot row,check current row.
 					for(;current_row_idx < current_row_size;current_row_idx++){
-						A_buffer.rows[i].push_back(A.rows[i][current_row_idx]);
+						A_buffer.rows[i].emplace_back(A.rows[i][current_row_idx]);
 					}
 				}
 				else{
 					for(;pivot_row_idx < pivot_row_size;pivot_row_idx++){
-						A_buffer.rows[i].push_back(
-							pair<int,double>(A.rows[pivot_row][pivot_row_idx].first,
-							t * A.rows[pivot_row][pivot_row_idx].second)
+						A_buffer.rows[i].emplace_back(
+							A.rows[pivot_row][pivot_row_idx].first,
+							t * A.rows[pivot_row][pivot_row_idx].second
 						);
 					}
 				}
@@ -595,15 +595,15 @@ int RSM_Model::GetSmallest(const vector<double>& bbar) {
 void RSM_Model::addConstraint(vector<pair<int,double>> line,double rhs){
 	m++;
 	mn++;
-	A.rows.push_back(line);
-	A.rows[m - 1].push_back(pair<int,double>(mn - 1,1));
+	A.rows.emplace_back(line);
+	A.rows[m - 1].emplace_back(mn - 1,1);
 
 	xb.resize(m);
 	xn.resize(n);
 
 	xb.back() = m - 1;
-	cbar.push_back(0);
-	bbar.push_back(rhs);
+	cbar.emplace_back(0);
+	bbar.emplace_back(rhs);
 }
 
 set<int> RSM_Model::GetBanlist(){
@@ -660,7 +660,7 @@ string RSM_Model::to_String(){
 
 		for(auto p : real_source){
 			list<int> line;
-			line.push_back(p.first);
+			line.emplace_back(p.first);
 			G.start_from_source(result,line,p.first,p.second,serverlvl[p.first]);
 		}
 		string newline = "\n";
