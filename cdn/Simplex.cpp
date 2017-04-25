@@ -9,6 +9,42 @@ bool IntTest(double num){
 	return fabs(nearbyint(num) - num) < zero_tolerance;
 }
 
+void printX(vector<int> x) {
+	cout << "{";
+	for (size_t j = 0; j < x.size(); j++) {
+		cout << " x" << x[j];
+	}
+	cout << " }";
+}
+
+void printVector(vector<double> v) {
+	for (size_t f = 0; f < v.size(); f++) {
+		cout << v[f] << "\t";
+	}
+	cout << endl;
+}
+
+double determVar(int number, vector<int> xb, vector<int> xn, 
+	vector<double> bbar) {	
+
+	for (size_t i = 0; i < xn.size(); i++) {
+		if (xn[i] == number)
+			return 0;
+	}
+	for (size_t j = 0; j < xb.size(); j++) {
+		if (xb[j] == number) {
+			if (fabs(bbar[j]) > 0.001) {
+				return bbar[j];
+			}
+			else {
+				return 0;
+			}
+		}
+	}
+
+	return -1; // Will be obvious if a mistake
+}
+
 
 RSM_Model RSM_Model::Dual(){
 	
@@ -61,7 +97,7 @@ void RSM_Model::init(){
 	//init col major
 
 	for(int i = 0;i < m;i++){
-		size_t rowsize = A_origin.rows.size();
+		size_t rowsize = A_origin.rows[i].size();
 		for(size_t j = 0;j < rowsize;j++){
 			A_origin_col_major.rows[A_origin.rows[i][j].first].
 			    emplace_back(i,A_origin.rows[i][j].second);
@@ -137,7 +173,7 @@ void RSM_Model::SetupObjectFunc(){
 		bbar[G.VertexNum + EdgeNum + i] = 1;
 	}
 
-    //init_slack();
+    init_slack();
 	for(int i = 0;i < n;i++){
 		cbar[i] *= -1;
 	}
@@ -157,6 +193,7 @@ void RSM_Model::cut(){
 	//init_slack();
 	while(!done){
 		optimize();
+		printSolution();
 		break;
 		done = true;
 		//for(int i = 0;i < n;i++){
@@ -342,7 +379,7 @@ void RSM_Model::optimize(){
 		int pivot_row = GetSmallest(bbar);
 		if (pivot_row == -1) { // if none, we're done here
 		    cout << endl << endl << "Optimal value of ";
-	        cout << CalcOptval() << " has been reached." << endl;
+	        cout << opt_value << " has been reached." << endl;
 			finished = true;
 			break;
 		}
@@ -421,7 +458,7 @@ void RSM_Model::optimize(){
 		}
 
 		//it is usless and wrong! but doesn't matters
-		//opt_value += ct * bbar[pivot_row];
+		opt_value += ct * bbar[pivot_row];
         //swap buffer!
 		//A = A_buffer;
 
@@ -431,10 +468,11 @@ void RSM_Model::optimize(){
 			//A_buffer.rows[pivot_row].emplace_back(pa);
 		}
 
+        if(iteration % 1000 == 0)
 		eliminateError();
 
-		//cout << iteration << endl;
-		iteration++; 
+		cout << iteration << endl;
+		iteration++;
 	}
 	cout << "iteration:" << iteration << endl;	
 }
@@ -609,10 +647,23 @@ void RSM_Model::eliminateError(){
 
 	//pre build cprimeB
 	vector<double> cprimeB(m);
+	/*
+	cout << "-------A_origin-------" << endl;
+	A_origin.pretty_print(mn);
+	cout << "-------A_origin-------" << endl;
+    cout << "-------A_origin_col_major-------" << endl;
+	A_origin_col_major.pretty_print(mn);
+	cout << "-------A_origin_col_major-------" << endl;
+	*/
 
     //reconstructed B
+	//TODO:TRANSPOSE B_inv
 	for(int i = 0;i < m;i++){
-		B_inv.rows[i] = A_origin_col_major.rows[xb[i]];
+		const auto& _col = A_origin_col_major.rows[xb[i]];
+		int row_size = _col.size();
+		for(int j = 0;j < row_size;j++){
+			B_inv.rows[_col[j].first].emplace_back(i,_col[j].second);
+		}
 		cprimeB[i] = c_origin[xb[i]];
 	}
 	//invert B
@@ -637,7 +688,8 @@ void RSM_Model::eliminateError(){
 double RSM_Model::CalcOptval(){
 	opt_value = 0.0;
 	for(int i = 0;i < m;i++){
-		opt_value += cbar[xb[i]] * bbar[xb[i]];
+		if(xb[i] < n)
+		    opt_value += c_origin[xb[i]] * bbar[xb[i]];
 	}
 	return opt_value;
 }

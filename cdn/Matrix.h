@@ -60,7 +60,7 @@ void MatMulMat(const SparseMatrix<T>& lhs,
 	int m = lhs.rows.size();
 	int mn = col_major.rows.size();
 
-	for(int i = 0;i < mn;i++)
+	for(int i = 0;i < m;i++)
 	    dest.rows[i].clear();
 
 	for(int i = 0;i < m;i++){
@@ -240,6 +240,11 @@ void GaussJordanInversion(SparseMatrix<T>& mat){
 
     //elimating col
 	for(int col = 0;col < dim;col++){
+		/*
+		cout << "--------------" << endl;
+		mat.pretty_print(dim);
+		cout << "--------------" << endl;
+		*/
 		if(mat.rows[col].size() > 0 && 
 		    mat.rows[col][0].first == col){
 			// non-zero element at this col
