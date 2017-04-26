@@ -20,7 +20,7 @@
 void testLR();
 
 void MatrixInversionTest(){
-	SparseMatrix<double> Mat;
+	SparseMatrix<float_type> Mat;
 	Mat.rows = {
 		{{0,3},{2,2}},
 		{{0,2},{2,-2}},
@@ -34,8 +34,8 @@ void MatrixInversionTest(){
 }
 
 void deploy_server66(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
-	//SimplexTest();
-	MatrixInversionTest();
+	SimplexTest();
+	//MatrixInversionTest();
 }
 
 /*
@@ -115,10 +115,56 @@ void deploy_server(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
 
 	RSM_Model RSM(G2);
 	RSM.init();
-	RSM.cut();
+	//RSM.cut();
+	RSM.BnB();
 	//RSM.printSolution();
 
+	
+
 	write_result(RSM.to_String().c_str(), filename);
+	
+}
+
+void deploy_server6666(char * topo[MAX_EDGE_NUM], int line_num,char * filename){
+	Timer::getInstance().start();
+	//Timer::getInstance().set(80);
+	Timer::getInstance().set(88500);
+	
+	Graph G2;
+	parse2(topo,line_num,G2);
+
+
+	RSM_Model RSM(G2);
+	RSM.init();
+	//RSM.cut();
+	//RSM.BnB();
+	//RSM.printSolution();
+
+	set<int> banlist = RSM.GetBanlist();
+	RSM.A.rows.clear();
+
+	
+	Graph G;
+	parse(topo,line_num,G);
+	G.save();
+
+	SSPA2 optimizer(G);
+
+	FireflySolver solver(optimizer,20,0.01,1,G.VertexNum);
+	
+	for(auto& c:solver.consumer_map){
+		c = true;
+	}
+
+	for(int ban:banlist){
+		solver.consumer_map[ban] = false;
+	}
+    solver.optimize(10000000);
+
+	cout << banlist.size() << endl;
+
+	G.restore_globalmin();
+	write_result(G.to_String().c_str(), filename);
 	
 }
 

@@ -13,14 +13,14 @@ void SimplexTest(){
 	model.m = 0;//addConstraint will increase it!
 	model.n = 2;
 	model.mn = 2;
-	model.cbar = vector<double>{-4,-5};
-	vector<pair<int,double>> constraint1;
-	constraint1.push_back(pair<int,double>(0,-1));
-	constraint1.push_back(pair<int,double>(1,-4));
+	model.cbar = vector<float_type>{-4,-5};
+	vector<pair<int,float_type>> constraint1;
+	constraint1.push_back(pair<int,float_type>(0,-1));
+	constraint1.push_back(pair<int,float_type>(1,-4));
 	model.addConstraint(constraint1,-5);
-	vector<pair<int,double>> constraint2;
-	constraint2.push_back(pair<int,double>(0,-3));
-	constraint2.push_back(pair<int,double>(1,-2));
+	vector<pair<int,float_type>> constraint2;
+	constraint2.push_back(pair<int,float_type>(0,-3));
+	constraint2.push_back(pair<int,float_type>(1,-2));
 	model.addConstraint(constraint2,-7);
 
 	model.cut();

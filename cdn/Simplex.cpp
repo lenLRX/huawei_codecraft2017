@@ -4,8 +4,9 @@
 #include <cmath>
 //#define DBG_PRINT
 //#define DBG_PRINT__cut
+//#define RESET_ERROR
 
-bool IntTest(double num){
+bool IntTest(float_type num){
 	return fabs(nearbyint(num) - num) < zero_tolerance;
 }
 
@@ -17,15 +18,15 @@ void printX(vector<int> x) {
 	cout << " }";
 }
 
-void printVector(vector<double> v) {
+void printVector(vector<float_type> v) {
 	for (size_t f = 0; f < v.size(); f++) {
 		cout << v[f] << "\t";
 	}
 	cout << endl;
 }
 
-double determVar(int number, vector<int> xb, vector<int> xn, 
-	vector<double> bbar) {	
+float_type determVar(int number, vector<int> xb, vector<int> xn, 
+	vector<float_type> bbar) {	
 
 	for (size_t i = 0; i < xn.size(); i++) {
 		if (xn[i] == number)
@@ -54,13 +55,13 @@ RSM_Model RSM_Model::Dual(){
 }
 
 void RSM_Model::init_space(){
-	A = SparseMatrix<double>(m);
-	A_origin = SparseMatrix<double>(m);
-	A_origin_col_major = SparseMatrix<double>(mn);
-	cbar = vector<double>(mn);
-	c_origin = vector<double>(mn);
-	bbar = vector<double>(m);
-	b_origin = vector<double>(m);
+	A = SparseMatrix<float_type>(m);
+	A_origin = SparseMatrix<float_type>(m);
+	A_origin_col_major = SparseMatrix<float_type>(mn);
+	cbar = vector<float_type>(mn);
+	c_origin = vector<float_type>(mn);
+	bbar = vector<float_type>(m);
+	b_origin = vector<float_type>(m);
 	xb = vector<int>(m);
 	xn = vector<int>(n);
 }
@@ -126,7 +127,7 @@ void RSM_Model::AddVertexBalance(const vector<int>& EdgesIn,
 
     //we must ensure the order
     sort(A.rows[vid].begin(),A.rows[vid].end(),
-	[](const pair<int,double>& lhs, const pair<int,double>& rhs)->bool{
+	[](const pair<int,float_type>& lhs, const pair<int,float_type>& rhs)->bool{
 		return lhs.first < rhs.first;
 	});
 
@@ -179,6 +180,155 @@ void RSM_Model::SetupObjectFunc(){
 	}
 }
 
+void RSM_Model::BnB(){
+	bool done = false;
+	for (size_t j = 0; j < mn; j++) { // c & x
+		if (j < n) {
+			xn[j] = j;
+		}
+		else {
+			xb[j - n] = j;
+		}
+	}
+
+
+	SparseMatrix<float_type> A_prev,A_prev2;
+
+	vector<float_type> cbar_prev,cbar_prev2;				// c
+
+	vector<float_type> bbar_prev,bbar_prev2;				// b
+
+	vector<int> xb_prev,xb_prev2;
+
+	float_type prev_opt_value,prev_opt_value2;
+	int prev_m,prev_mn;
+	int prev_m2,prev_mn2;
+	
+
+	optimize();
+    A_prev = A;
+	cbar_prev = cbar;
+	bbar_prev = bbar;
+	xb_prev = xb;
+	prev_opt_value = opt_value;
+	prev_m = m;
+	prev_mn = mn;
+
+    //printSolution();
+	while(!done){
+		
+		done = true;
+		float_type min_f = 1.00;
+		int max_pos = -1;
+
+		for(int j = 0;j < m;j++){
+			if(xb[j] < n){
+			//if(true){
+			//basic var
+			    if(!IntTest(bbar[j])){
+				    //still not integer add constraint for jth row
+				    done = false;
+					if(fabs(floor(bbar[j]) + 0.5 - bbar[j]) < min_f){
+						max_pos = j;
+						min_f = fabs(floor(bbar[j]) + 0.5 - bbar[j]);
+					}
+				}
+			}
+		}
+
+		if(done)
+		    break;
+
+		cout << "bbar[" << xb[max_pos] << "] " << bbar[max_pos] << endl;
+
+		{
+			if(fabs(floor(bbar[max_pos])) < zero_tolerance){
+				opt_value = 1000000;
+			}
+			else{
+				//floor banch		
+				vector<pair<int,float_type>> constraint;
+				constraint.emplace_back(xb[max_pos],1);
+
+				addConstraint(constraint,floor(bbar[max_pos]));
+				if(!optimize())
+					opt_value = 1000000;
+			    cout << floor(bbar[max_pos]) << endl;
+				//printSolution();
+			}
+			
+
+			A_prev2 = A;
+			cbar_prev2 = cbar;
+			bbar_prev2 = bbar;
+			xb_prev2 = xb;
+			prev_opt_value2 = opt_value;
+			prev_m2 = m;
+	        prev_mn2 = mn;
+		}//floor banch
+
+		
+
+		{
+			A = A_prev;
+			cbar = cbar_prev;
+			bbar = bbar_prev;
+			xb = xb_prev;
+			opt_value = prev_opt_value;
+			m = prev_m;
+	        mn = prev_mn;
+
+			if(fabs(ceil(bbar[max_pos])) < zero_tolerance){
+				opt_value = 1000000;
+			}
+			else{
+				//ceil banch		
+				vector<pair<int,float_type>> constraint;
+				constraint.emplace_back(xb[max_pos],-1);
+
+				addConstraint(constraint,-ceil(bbar[max_pos]));
+				if(!optimize())
+					opt_value = 1000000;
+				cout << ceil(bbar[max_pos]) << endl;
+				//printSolution();
+			}
+			
+
+			if(opt_value < prev_opt_value2){
+				//ceil better than floor
+				A_prev = A;
+				cbar_prev = cbar;
+				bbar_prev = bbar;
+				xb_prev = xb;
+				prev_opt_value = opt_value;
+				prev_m = m;
+	            prev_mn = mn;
+			}
+			else{
+				//floor is better
+				A = A_prev2;
+				cbar = cbar_prev2;
+				bbar = bbar_prev2;
+				xb = xb_prev2;
+				opt_value = prev_opt_value2;
+				m = prev_m2;
+	            mn = prev_mn2;
+
+				A_prev = A;
+				cbar_prev = cbar;
+				bbar_prev = bbar;
+				xb_prev = xb;
+				prev_opt_value = opt_value;
+				prev_m = m;
+	            prev_mn = mn;
+			}
+
+			
+		}
+
+	}
+}
+
 void RSM_Model::cut(){
 	bool done = false;
 	for (size_t j = 0; j < mn; j++) { // c & x
@@ -190,12 +340,17 @@ void RSM_Model::cut(){
 		}
 	}
 
+    
+
 	//init_slack();
 	while(!done){
 		optimize();
-		printSolution();
-		break;
+		//printSolution();
+		//break;
 		done = true;
+		float_type max_f = 0;
+		int max_pos = -1;
+
 		//for(int i = 0;i < n;i++){
 			for(int j = 0;j < m;j++){
 			    if(xb[j] < n){
@@ -203,34 +358,47 @@ void RSM_Model::cut(){
 					//basic var
 					if(!IntTest(bbar[j])){
 						//still not integer add constraint for jth row
+						if(fabs(floor(bbar[j]) - bbar[j]) > max_f){
+							max_pos = j;
+							max_f = fabs(floor(bbar[j]) - bbar[j]);
+						}
 						done = false;
-						vector<pair<int,double>> constraint;
-						bool all_integer = true;
-						size_t row_size = A.rows[j].size();
-						for(size_t offset = 0;offset < row_size;offset++){
-							if(!IntTest(A.rows[j][offset].second)){
-								all_integer = false;
-								break;
-							}
-						}
-						if(all_integer){
-							bbar[j] = floor(bbar[j]);
-							//throw "shit";
-						}
-						else{
-							for(size_t offset = 0;offset < row_size;offset++){
-								double value = floor(A.rows[j][offset].second) - A.rows[j][offset].second;
-								if(fabs(value) > zero_tolerance)
-									constraint.emplace_back(A.rows[j][offset].first,-fabs(value));
-							}
-							addConstraint(constraint,floor(bbar[j]) - bbar[j]);
-						}
 						
-						break;
 					}
 				}
 			}
 		//}
+
+		if(done)
+		    break;
+
+		vector<pair<int,float_type>> constraint;
+		bool all_integer = true;
+		size_t row_size = A.rows[max_pos].size();
+		for(size_t offset = 0;offset < row_size;offset++){
+			if(!IntTest(A.rows[max_pos][offset].second)){
+				all_integer = false;
+					break;
+			}
+		}
+		cout << "bbar[max_pos] " << bbar[max_pos] << endl;
+		if(all_integer){
+			bbar[max_pos] = floor(bbar[max_pos]);
+			//throw "shit";
+		}
+		else{
+			for(size_t offset = 0;offset < row_size;offset++){
+				float_type value = floor(A.rows[max_pos][offset].second) - A.rows[max_pos][offset].second;
+				if(fabs(value) > zero_tolerance){
+					constraint.emplace_back(A.rows[max_pos][offset].first,-fabs(value));
+					cout << -fabs(value) << " ";
+				}
+									
+			}
+			cout << endl;
+			addConstraint(constraint,-fabs(floor(bbar[max_pos]) - bbar[max_pos]));
+		}
+	
 	}
 }
 
@@ -264,7 +432,7 @@ void RSM_Model::mainLoop(){
 
 	init_slack();
 #endif
-    vector<pair<vector<pair<int,double>>,double>> constraint_list;
+    vector<pair<vector<pair<int,float_type>>,float_type>> constraint_list;
 	for(int opt_time = 0;opt_time < 120;opt_time++){
 		init();
 		optimize();
@@ -287,14 +455,14 @@ void RSM_Model::mainLoop(){
 			}
 		}
 
-		vector<pair<int,double>> constraint;
+		vector<pair<int,float_type>> constraint;
 		for(int i = 0;i< G.ServerLvlNum;i++)
 		    constraint.emplace_back(G.EdgeNum + max_vid * G.ServerLvlNum+i,-1);
 		//addConstraint(constraint,-1);
 	}
 }
 
-void RSM_Model::optimize(){
+bool RSM_Model::optimize(){
 	
 #ifdef DBG_PRINT
 	cout << endl << "--- output ---" << endl << endl;
@@ -381,6 +549,7 @@ void RSM_Model::optimize(){
 		    cout << endl << endl << "Optimal value of ";
 	        cout << opt_value << " has been reached." << endl;
 			finished = true;
+			return true;
 			break;
 		}
 #ifdef DBG_PRINT	
@@ -394,7 +563,7 @@ void RSM_Model::optimize(){
 		if (pivot_col == -1) {
 			finished = true;
 			cout << "Solution is unbounded row size: " << A.rows[pivot_row].size() << endl;
-			throw 0 ;			
+			return false;			
 			break;
 		}
 
@@ -404,12 +573,12 @@ void RSM_Model::optimize(){
 #endif
 		//divid row by pivot so it will be 1
 
-		double pivot_value = A.rows[pivot_row][pivot_offset].second;
+		float_type pivot_value = A.rows[pivot_row][pivot_offset].second;
 #ifdef DBG_PRINT
 		cout << "pivot_value " << pivot_value << endl;
 #endif
         
-		//auto A_buffer = SparseMatrix<double>(m);
+		//auto A_buffer = SparseMatrix<float_type>(m);
 		
 
 
@@ -421,7 +590,7 @@ void RSM_Model::optimize(){
 			if(i == pivot_row)
 			    continue;
 			
-			pair<int,double> pivot_col_at_any_row = pair<int,double>(-1,0.0);
+			pair<int,float_type> pivot_col_at_any_row = pair<int,float_type>(-1,0.0);
 			//TODO binary search
 			size_t row_size = A.rows[i].size();
 			for(size_t j = 0;j < row_size;j++){
@@ -439,9 +608,9 @@ void RSM_Model::optimize(){
 			}
 			    
 			
-			double t = - pivot_col_at_any_row.second / pivot_value;
+			float_type t = - pivot_col_at_any_row.second / pivot_value;
 			if(fabs(t)>zero_tolerance){
-                row_operation<double>(A,pivot_row,i,t);
+                row_operation<float_type>(A,pivot_row,i,t);
 			    bbar[i] += t * bbar[pivot_row];
 			}
 			
@@ -451,7 +620,7 @@ void RSM_Model::optimize(){
 
 		//update cbar
 
-		double ct = -cbar[pivot_col] / pivot_value;
+		float_type ct = -cbar[pivot_col] / pivot_value;
 
 		for(auto& pa:A.rows[pivot_row]){
 			cbar[pa.first] += ct * pa.second;
@@ -463,15 +632,15 @@ void RSM_Model::optimize(){
 		//A = A_buffer;
 
 		bbar[pivot_row] /= pivot_value;
-		for(pair<int,double>& pa:A.rows[pivot_row]){
+		for(pair<int,float_type>& pa:A.rows[pivot_row]){
 			pa.second /= pivot_value;
 			//A_buffer.rows[pivot_row].emplace_back(pa);
 		}
 
-        if(iteration % 1000 == 0)
-		eliminateError();
+        //if(iteration % 1000 == 0)
+		//eliminateError();
 
-		cout << iteration << endl;
+		//cout << iteration << endl;
 		iteration++;
 	}
 	cout << "iteration:" << iteration << endl;	
@@ -479,20 +648,20 @@ void RSM_Model::optimize(){
 //offset,col
 pair<int,int> RSM_Model::find_pivot_col(int pivot_row){
 	pair<int,int> pos = pair<int,int>(-1,-1);
-	double ratio;
-	double smallest = 0;
+	float_type ratio;
+	float_type smallest = 0;
 	bool first = true;
 	size_t row_size = A.rows[pivot_row].size();
 	for(size_t i = 0;i < row_size;i++){
 		const auto& pa = A.rows[pivot_row][i];
 		//ignore sign
-		double a = pa.second;
+		float_type a = pa.second;
 		if(a < 0){
 			a = fabs(a);
 		}
 		else
 		    continue;
-		double _c = fabs(cbar[pa.first]);
+		float_type _c = fabs(cbar[pa.first]);
 		if(a > zero_tolerance){
 			ratio =_c / a;
 			if(first || ratio < smallest){
@@ -516,9 +685,9 @@ pair<int,int> RSM_Model::find_pivot_col(int pivot_row){
 	return pos;
 }
 
-int RSM_Model::GetSmallest(const vector<double>& bbar) {
+int RSM_Model::GetSmallest(const vector<float_type>& bbar) {
 	int result = -1;
-	double smallest = 0;
+	float_type smallest = -zero_tolerance;
 
 	for (size_t i = 0; i < bbar.size(); i++) {
 		if (bbar[i] < smallest) {
@@ -532,12 +701,34 @@ int RSM_Model::GetSmallest(const vector<double>& bbar) {
 	return result;
 }
 
-void RSM_Model::addConstraint(vector<pair<int,double>> line,double rhs){
+void RSM_Model::addConstraint(vector<pair<int,float_type>> line,float_type rhs){
 	m++;
 	mn++;
 	A.rows.emplace_back(line);
+	
+
+	A.rows[m - 1].emplace_back(mn - 1,1);
+	
+    if(rhs > 0){
+		for(auto& pa: A.rows.back())
+		    pa.second *= -1;
+	}
+
+	xb.resize(m);
+	xn.resize(n);
+
+	xb.back() = m - 1;
+	cbar.emplace_back(0);
+	
+	if(rhs < 0)
+	    bbar.emplace_back(rhs);
+	else
+	    bbar.emplace_back(-rhs);
+	
+#ifdef RESET_ERROR
+    A_origin.rows[m - 1].emplace_back(mn - 1,1);
 	A_origin.rows.emplace_back(line);
-	vector<pair<int,double>> tmp_line;
+	vector<pair<int,float_type>> tmp_line;
 	tmp_line.emplace_back(m - 1,1);
 	A_origin_col_major.rows.emplace_back(
 		tmp_line);
@@ -546,19 +737,9 @@ void RSM_Model::addConstraint(vector<pair<int,double>> line,double rhs){
 		A_origin_col_major.rows[pa.first].
 		    emplace_back(m - 1,pa.second);
 	}
-
-	A.rows[m - 1].emplace_back(mn - 1,1);
-	A_origin.rows[m - 1].emplace_back(mn - 1,1);
-
-
-	xb.resize(m);
-	xn.resize(n);
-
-	xb.back() = m - 1;
-	cbar.emplace_back(0);
 	c_origin.emplace_back(0);
-	bbar.emplace_back(rhs);
 	b_origin.emplace_back(rhs);
+#endif
 }
 
 set<int> RSM_Model::GetBanlist(){
@@ -572,7 +753,6 @@ set<int> RSM_Model::GetBanlist(){
 		}
 	}
 
-	init_slack();
 	optimize();
 	for(int i = 0;i < n;i++){
 		for(int j = 0;j < m;j++){
@@ -582,7 +762,7 @@ set<int> RSM_Model::GetBanlist(){
 					continue;
 				}
 				else{
-					if(bbar[j] < zero_tolerance)
+					if(bbar[j] < 0.1)
 					    ret.insert((i - EdgeNum) / G.ServerLvlNum);
 				}
 			}
@@ -643,10 +823,10 @@ string RSM_Model::to_String(){
 }
 
 void RSM_Model::eliminateError(){
-	SparseMatrix<double> B_inv(m);
+	SparseMatrix<float_type> B_inv(m);
 
 	//pre build cprimeB
-	vector<double> cprimeB(m);
+	vector<float_type> cprimeB(m);
 	/*
 	cout << "-------A_origin-------" << endl;
 	A_origin.pretty_print(mn);
@@ -672,7 +852,7 @@ void RSM_Model::eliminateError(){
 	//recalculate cbar (reduced cost)
 	for(int i = 0;i < mn;i++){
 		//B_inv x Aj
-		vector<double> v_tmp(m);
+		vector<float_type> v_tmp(m);
 		MatMulVector(B_inv,A_origin_col_major.rows[i],v_tmp);
 		cbar[i] = c_origin[i] - InnerProduct(cprimeB,v_tmp);
 	}
@@ -685,7 +865,7 @@ void RSM_Model::eliminateError(){
 	MatMulMat(B_inv,A_origin_col_major,A);
 }
 
-double RSM_Model::CalcOptval(){
+float_type RSM_Model::CalcOptval(){
 	opt_value = 0.0;
 	for(int i = 0;i < m;i++){
 		if(xb[i] < n)

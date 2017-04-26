@@ -24,13 +24,15 @@ public:
 
 	void cut();
 
+	void BnB();
+
 
 	void init_space();
 	void init_slack();
 
 	void mainLoop();
 
-	void optimize();
+	bool optimize();
 
 
     void AddVertexBalance(const vector<int>& EdgesIn,
@@ -40,16 +42,16 @@ public:
 
 	int CalcCost();
 
-	void addConstraint(vector<pair<int,double>> line,double rhs);
+	void addConstraint(vector<pair<int,float_type>> line,float_type rhs);
 
-	int GetSmallest(const vector<double>& bbar);
+	int GetSmallest(const vector<float_type>& bbar);
 
     //offset,col
 	pair<int,int> find_pivot_col(int pivot_row);
 	
 	void eliminateError();
 
-	double CalcOptval();
+	float_type CalcOptval();
 
 	string to_String();
 
@@ -57,26 +59,26 @@ public:
 
 	set<int> GetBanlist();
 
-	vector<double> x;
+	vector<float_type> x;
 
-    SparseMatrix<double> A_origin;
-	SparseMatrix<double> A_origin_col_major;
-	SparseMatrix<double> A;
+    SparseMatrix<float_type> A_origin;
+	SparseMatrix<float_type> A_origin_col_major;
+	SparseMatrix<float_type> A;
 
-	vector<double> c_origin;
+	vector<float_type> c_origin;
 
-	vector<double> cbar;				// c
+	vector<float_type> cbar;				// c
 
-    vector<double> b_origin;
+    vector<float_type> b_origin;
 
-	vector<double> bbar;				// b
+	vector<float_type> bbar;				// b
 
 	vector<int> xb;
 	vector<int> xn;						// x
-	double t;									// for getting bbar
+	float_type t;									// for getting bbar
 	set<int> banlist;
 
-	double opt_value;
+	float_type opt_value;
 
 	int EdgeNum;
 	int n;//num vars

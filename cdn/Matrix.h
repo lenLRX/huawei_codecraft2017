@@ -8,9 +8,13 @@
 
 using namespace std;
 
-const double zero_tolerance = 1E-6;
+typedef long double float_type;
 
-template<typename T = double>
+const float_type zero_tolerance = 1E-6;
+
+
+
+template<typename T = float_type>
 class SparseMatrix{
 public:
     SparseMatrix()=default;
@@ -38,7 +42,7 @@ public:
     vector<vector<pair<int,T>>> rows;
 };
 
-template<typename T = double>
+template<typename T = float_type>
 class ColMajorSparseMatrix{
 public:
     ColMajorSparseMatrix()=default;
@@ -53,7 +57,7 @@ public:
 };
 
 
-template<typename T = double>
+template<typename T = float_type>
 void MatMulMat(const SparseMatrix<T>& lhs,
     const SparseMatrix<T>& col_major,
 	SparseMatrix<T>& dest){
@@ -65,7 +69,7 @@ void MatMulMat(const SparseMatrix<T>& lhs,
 
 	for(int i = 0;i < m;i++){
 		for(int j = 0;j < mn;j++){
-			double sum = 0.0;
+			float_type sum = 0.0;
 			int lhs_row_size = lhs.rows[i].size();
 			int lhs_row_idx = 0;
 			int col_major_row_size = col_major.rows[j].size();
@@ -84,7 +88,7 @@ void MatMulMat(const SparseMatrix<T>& lhs,
 				}
 				else{
 					//col_major_row_idx == lhs_row_idx both nonzero
-					double _value_insert = 
+					float_type _value_insert = 
 						col_major.rows[j][col_major_row_idx].second
 						* lhs.rows[i][lhs_row_idx].second;
 					
@@ -104,13 +108,13 @@ void MatMulMat(const SparseMatrix<T>& lhs,
 }
 
 //A x v1 = v2
-template<typename T = double>
+template<typename T = float_type>
 void MatMulVector(const SparseMatrix<T>& mat,
-    const vector<double>& source,
-	vector<double>& dest){
+    const vector<float_type>& source,
+	vector<float_type>& dest){
 	int row_num = mat.rows.size();
 	for(int i = 0;i < row_num;i++){
-		double sum = 0.0;
+		float_type sum = 0.0;
 		int row_size = mat.rows[i].size();
 		for(int j = 0;j < row_size;j++){
 			sum += mat.rows[i][j].second * 
@@ -120,13 +124,13 @@ void MatMulVector(const SparseMatrix<T>& mat,
 	}
 }
 
-template<typename T = double>
+template<typename T = float_type>
 void MatMulVector(const SparseMatrix<T>& lhs,
-    const vector<pair<int,double>>& col_major,
-	vector<double>& dest){
+    const vector<pair<int,float_type>>& col_major,
+	vector<float_type>& dest){
 	int row_num = lhs.rows.size();
 	for(int i = 0;i < row_num;i++){
-		double sum = 0.0;
+		float_type sum = 0.0;
 			int lhs_row_size = lhs.rows[i].size();
 			int lhs_row_idx = 0;
 			int col_major_row_size = col_major.size();
@@ -145,7 +149,7 @@ void MatMulVector(const SparseMatrix<T>& lhs,
 				}
 				else{
 					//col_major_row_idx == lhs_row_idx both nonzero
-					double _value_insert = 
+					float_type _value_insert = 
 						col_major[col_major_row_idx].second
 						* lhs.rows[i][lhs_row_idx].second;
 					
@@ -159,9 +163,9 @@ void MatMulVector(const SparseMatrix<T>& lhs,
 	}
 }
 
-static double InnerProduct(const vector<double>& v1,const vector<double>&v2){
+static float_type InnerProduct(const vector<float_type>& v1,const vector<float_type>&v2){
 	int dim = v1.size();
-	double sum = 0.0;
+	float_type sum = 0.0;
 	for(int i = 0;i < dim;i++){
 		sum += v1[i] * v2[i];
 	}
@@ -170,14 +174,14 @@ static double InnerProduct(const vector<double>& v1,const vector<double>&v2){
 
 
 //mat.rows[dest] += coef X mat.rows[source]
-template<typename T = double>
-void row_operation(SparseMatrix<T>& mat,int source,int dest,double coef){
+template<typename T = float_type>
+void row_operation(SparseMatrix<T>& mat,int source,int dest,float_type coef){
 	int source_row_size = mat.rows[source].size();
 	int source_row_idx = 0;
 	int dest_row_size = mat.rows[dest].size();
 	int dest_row_idx = 0;
 
-	vector<pair<int,double>> new_row;
+	vector<pair<int,float_type>> new_row;
 
 	while(source_row_idx < source_row_size 
 		 && dest_row_idx < dest_row_size){
@@ -198,7 +202,7 @@ void row_operation(SparseMatrix<T>& mat,int source,int dest,double coef){
 		}
 		else{
 
-			double _value_insert = 
+			float_type _value_insert = 
 				 mat.rows[dest][dest_row_idx].second + coef * mat.rows[source][source_row_idx].second;
 
 			//insert if non zero
@@ -229,7 +233,7 @@ void row_operation(SparseMatrix<T>& mat,int source,int dest,double coef){
 	mat.rows[dest] = new_row;
 }
 
-template<typename T = double>
+template<typename T = float_type>
 void GaussJordanInversion(SparseMatrix<T>& mat){
 	int dim = mat.rows.size();
 	SparseMatrix<T> Identity(dim);
@@ -269,7 +273,7 @@ void GaussJordanInversion(SparseMatrix<T>& mat){
 		}
 
 		//divide to make the first element is 1
-		double first_element = mat.rows[col][0].second;
+		float_type first_element = mat.rows[col][0].second;
 		for(auto& pa:mat.rows[col]){
 			pa.second /= first_element;
 		}
@@ -283,7 +287,7 @@ void GaussJordanInversion(SparseMatrix<T>& mat){
 		for(int row = 0;row < dim;row++){
 			if(row == col)
 			    continue;
-			pair<int,double> col_at_row = pair<int,double>(-1,0.0);
+			pair<int,float_type> col_at_row = pair<int,float_type>(-1,0.0);
 			//TODO:binary search
 			size_t row_size = mat.rows[row].size();
 			for(size_t j = 0;j < row_size;j++){
@@ -298,10 +302,10 @@ void GaussJordanInversion(SparseMatrix<T>& mat){
 				continue;//it is already 0 just do nothing
 			}
 
-			double t = - col_at_row.second;
+			float_type t = - col_at_row.second;
 			if(fabs(t)>zero_tolerance){
-                row_operation<double>(mat,col,row,t);
-				row_operation<double>(Identity,col,row,t);
+                row_operation<float_type>(mat,col,row,t);
+				row_operation<float_type>(Identity,col,row,t);
 			}
 		}
 	}
